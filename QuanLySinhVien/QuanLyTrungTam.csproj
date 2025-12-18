@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8F03CAB5-C123-4C11-B47E-1E2B1928CF7C}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>QuanLyTrungTam</RootNamespace>
+    <AssemblyName>QuanLyTrungTam</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Google.Apis, Version=1.73.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.1.73.0\lib\net462\Google.Apis.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Apis.Auth, Version=1.73.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Auth.1.73.0\lib\net462\Google.Apis.Auth.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Apis.Core, Version=1.73.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Core.1.73.0\lib\net462\Google.Apis.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.OracleClient" />
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DAO\AccountDAO.cs" />
+    <Compile Include="DAO\DashboardDAO.cs" />
+    <Compile Include="DAO\Database.cs" />
+    <Compile Include="DAO\DataProvider.cs" />
+    <Compile Include="DAO\GoogleHelper.cs" />
+    <Compile Include="DAO\HocVienDAO.cs" />
+    <Compile Include="DAO\KyNangDAO.cs" />
+    <Compile Include="DAO\LopHocDAO.cs" />
+    <Compile Include="DAO\StatsDAO.cs" />
+    <Compile Include="DAO\TuitionDAO.cs" />
+    <Compile Include="DTO\Account.cs" />
+    <Compile Include="DTO\AppSession.cs" />
+    <Compile Include="DTO\DangKyDTO.cs" />
+    <Compile Include="DTO\KyNangDTO.cs" />
+    <Compile Include="fChangePassword.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="fChangePassword.Designer.cs">
+      <DependentUpon>fChangePassword.cs</DependentUpon>
+    </Compile>
+    <Compile Include="fMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="fMain.Designer.cs">
+      <DependentUpon>fMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form1.Designer.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmDangKy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmDangKy.Designer.cs">
+      <DependentUpon>FrmDangKy.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmDangKyAdmin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmDangKyAdmin.Designer.cs">
+      <DependentUpon>FrmDangKyAdmin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmDashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmDashboard.Designer.cs">
+      <DependentUpon>FrmDashboard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHocPhi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHocPhi.Designer.cs">
+      <DependentUpon>FrmHocPhi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHomeHocVien.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHomeHocVien.Designer.cs">
+      <DependentUpon>FrmHomeHocVien.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmLop.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmLop.Designer.cs">
+      <DependentUpon>FrmLop.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmQuanLyHocVien.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmQuanLyHocVien.Designer.cs">
+      <DependentUpon>FrmQuanLyHocVien.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmQuanLyMonHoc.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmQuanLyMonHoc.Designer.cs">
+      <DependentUpon>FrmQuanLyMonHoc.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmThongTinCaNhan.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmThongTinCaNhan.Designer.cs">
+      <DependentUpon>FrmThongTinCaNhan.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmTraCuuHocPhi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmTraCuuHocPhi.Designer.cs">
+      <DependentUpon>FrmTraCuuHocPhi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PhanQuyen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PhanQuyen.Designer.cs">
+      <DependentUpon>PhanQuyen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="fChangePassword.resx">
+      <DependentUpon>fChangePassword.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="fMain.resx">
+      <DependentUpon>fMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmDangKy.resx">
+      <DependentUpon>FrmDangKy.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmHocPhi.resx">
+      <DependentUpon>FrmHocPhi.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BUS\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

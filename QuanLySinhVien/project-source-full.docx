@@ -1,0 +1,361 @@
+
+Project: QuanLySinhVien
+Target framework: .NET Framework 4.7.2
+C# Language version: 7.3
+Repository local path: C:\Users\Admin\Source\Repos\student-management
+Remote: https://github.com/khang1233/student-management
+
+This document contains the full project source (collected files). Below are the concatenated contents of the project's .cs and .Designer.cs files available in the workspace.
+
+--- FILE: FrmHocPhi.cs ---
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+using QuanLySinhVien.DAO;
+using QuanLySinhVien.DTO;
+using System.Data;
+
+namespace QuanLySinhVien
+{
+    public partial class FrmHocPhi : Form
+    {
+        private Account loginAccount;
+        private string currentMaSV = null;
+
+        // --- CÁC CONTROL ---
+        private DataGridView dgvListSV_New;
+        private TextBox txbSoTien_New;
+        private TextBox txbTongNo_New;
+        private Button btnDongTien_New;
+        private Button btnCapNhatNo_New;
+        private Label lblThongTin_New, lblDaDong_New, lblConNo_New;
+
+        // Panel ch?a n?i dung bên ph?i
+        private Panel pnlRight;
+        // Cái khung x?p hàng d?c (Ch?ng ?è)
+        private FlowLayoutPanel flowStack;
+
+        public FrmHocPhi(Account acc)
+        {
+            this.loginAccount = acc;
+            SetupLayout();
+        }
+
+        // Hàm gi? ch? ?? designer không l?i
+        private void FrmHocPhi_Load(object sender, EventArgs e) { }
+
+        // --- S? KI?N C?N GI?A ---
+        private void PnlRight_Layout(object sender, LayoutEventArgs e)
+        {
+            if (pnlRight != null && flowStack != null)
+            {
+                // Tính toán ?? ??a nguyên cái c?t d?c vào gi?a màn hình
+                int x = (pnlRight.Width - flowStack.Width) / 2;
+                int y = 50; // Cách l? trên 50px
+                flowStack.Location = new Point(x < 0 ? 0 : x, y);
+            }
+        }
+
+        private void SetupLayout()
+        {
+            this.Controls.Clear();
+            this.Size = new Size(1200, 750);
+            this.StartPosition = FormStartPosition.CenterScreen;
+
+            // 1. CHIA C?T TRÁI - PH?I
+            SplitContainer split = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                FixedPanel = FixedPanel.Panel1,
+                SplitterDistance = 350,
+                TabStop = false
+            };
+            this.Controls.Add(split);
+
+            // =========================================================
+            // C?T TRÁI: DANH SÁCH SINH VIÊN (GI? NGUYÊN)
+            // =========================================================
+            dgvListSV_New = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                ReadOnly = true,
+                BackgroundColor = Color.WhiteSmoke,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false
+            };
+            dgvListSV_New.EnableHeadersVisualStyles = false;
+            dgvListSV_New.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgvListSV_New.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvListSV_New.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgvListSV_New.ColumnHeadersHeight = 40;
+            dgvListSV_New.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            dgvListSV_New.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 242, 241);
+            dgvListSV_New.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgvListSV_New.CellClick += dgvSinhVien_CellClick;
+
+            GroupBox grpList = new GroupBox { Text = "DANH SÁCH SINH VIÊN", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
+            grpList.Controls.Add(dgvListSV_New);
+            split.Panel1.Controls.Add(grpList);
+            split.Panel1.Padding = new Padding(5);
+
+            // =========================================================
+            // C?T PH?I: DÙNG FLOW LAYOUT (X?P HÀNG D?C)
+            // =========================================================
+            pnlRight = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            split.Panel2.Controls.Add(pnlRight);
+            pnlRight.Layout += PnlRight_Layout;
+
+            // T?o cái thùng ch?a x?p hàng d?c
+            flowStack = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown, // X?p t? trên xu?ng
+                WrapContents = false, // Không ???c xu?ng dòng ngang
+                AutoSize = true,      // T? co giãn theo n?i dung bên trong
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = Color.White,
+                Width = 600 // ?? r?ng c? ??nh cho n?i dung
+            };
+            pnlRight.Controls.Add(flowStack);
+
+            // --- B?T ??U X?P T?NG DÒNG VÀO (KHÔNG C?N T?A ?? Y) ---
+
+            // 1. TIÊU ??
+            lblThongTin_New = new Label
+            {
+                Text = "QU?N LÝ H?C PHÍ",
+                Font = new Font("Segoe UI", 24, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 122, 204),
+                TextAlign = ContentAlignment.MiddleCenter,
+                AutoSize = false,
+                Width = 600,  // R?ng b?ng khung cha
+                Height = 60,
+                Margin = new Padding(0, 0, 0, 30) // Cách dòng d??i 30px
+            };
+            flowStack.Controls.Add(lblThongTin_New);
+
+            // 2. DÒNG "T?NG H?C PHÍ" (G?m Label + TextBox + Button n?m ngang)
+            // Ta t?o 1 Panel nh? ?? ch?a 3 cái này n?m ngang
+            Panel pnlRowTongTien = new Panel { Width = 600, Height = 40, Margin = new Padding(0, 0, 0, 10) };
+
+            Label lblTong = new Label { Text = "T?ng h?c phí:", Location = new Point(20, 8), AutoSize = true, Font = new Font("Segoe UI", 12) };
+            txbTongNo_New = new TextBox { Location = new Point(150, 5), Width = 300, Font = new Font("Segoe UI", 12), TextAlign = HorizontalAlignment.Right, Text = "0" };
+            btnCapNhatNo_New = new Button { Text = "C?p nh?t", Location = new Point(460, 3), Size = new Size(100, 32), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
+            btnCapNhatNo_New.Click += btnCapNhatNo_Click;
+
+            pnlRowTongTien.Controls.Add(lblTong);
+            pnlRowTongTien.Controls.Add(txbTongNo_New);
+            pnlRowTongTien.Controls.Add(btnCapNhatNo_New);
+            flowStack.Controls.Add(pnlRowTongTien);
+
+            // 3. DÒNG "?Ã ?ÓNG"
+            lblDaDong_New = new Label
+            {
+                Text = "?ã ?óng: 0 VN?",
+                Font = new Font("Segoe UI", 12),
+                ForeColor = Color.ForestGreen,
+                AutoSize = true,
+                Padding = new Padding(20, 0, 0, 0), // Lùi vào 20px
+                Margin = new Padding(0, 0, 0, 10)   // Cách d??i 10px
+            };
+            flowStack.Controls.Add(lblDaDong_New);
+
+            // 4. DÒNG "CÒN N?"
+            lblConNo_New = new Label
+            {
+                Text = "Còn n?: 0 VN?",
+                Font = new Font("Segoe UI", 18, FontStyle.Bold),
+                ForeColor = Color.Red,
+                AutoSize = true,
+                Padding = new Padding(20, 0, 0, 0),
+                Margin = new Padding(0, 0, 0, 40) // Cách cái khung nh?p ti?n bên d??i 40px
+            };
+            flowStack.Controls.Add(lblConNo_New);
+
+            // 5. GROUPBOX THANH TOÁN (Cu?i cùng)
+            GroupBox grpDong = new GroupBox
+            {
+                Text = "Thanh toán / ?óng ti?n",
+                Size = new Size(600, 180), // Kích th??c khung nh?p
+                Font = new Font("Segoe UI", 11)
+            };
+
+            Label lblNhap = new Label { Text = "Nh?p s? ti?n:", Location = new Point(40, 60), AutoSize = true };
+            txbSoTien_New = new TextBox { Location = new Point(160, 57), Width = 300, Font = new Font("Segoe UI", 12) };
+            btnDongTien_New = new Button { Text = "XÁC NH?N ?ÓNG", Location = new Point(160, 110), Size = new Size(300, 45), BackColor = Color.Teal, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            btnDongTien_New.Click += btnXacNhanDong_Click;
+
+            grpDong.Controls.Add(lblNhap);
+            grpDong.Controls.Add(txbSoTien_New);
+            grpDong.Controls.Add(btnDongTien_New);
+
+            flowStack.Controls.Add(grpDong);
+
+            // --- PHÂN QUY?N ---
+            if (loginAccount != null)
+            {
+                string role = loginAccount.Quyen.Trim().ToLower();
+                if (role == "sinhvien" || role == "sv")
+                {
+                    split.Panel1Collapsed = true;
+                    currentMaSV = loginAccount.MaNguoiDung;
+                    txbTongNo_New.Enabled = false;
+                    btnCapNhatNo_New.Visible = false;
+                    string tenThat = GetTenSinhVien(currentMaSV);
+                    lblThongTin_New.Text = tenThat.ToUpper();
+                    LoadHocPhi(currentMaSV);
+                }
+                else
+                {
+                    LoadDSSinhVien();
+                    txbTongNo_New.Enabled = true;
+                    btnCapNhatNo_New.Visible = true;
+                }
+            }
+        }
+
+        // --- CÁC HÀM X? LÝ (KHÔNG ??I) ---
+        private void dgvSinhVien_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && dgvListSV_New.Rows[e.RowIndex].Cells["MaSV"].Value != null)
+            {
+                currentMaSV = dgvListSV_New.Rows[e.RowIndex].Cells["MaSV"].Value.ToString();
+                string ten = dgvListSV_New.Rows[e.RowIndex].Cells["HoTen"].Value.ToString();
+                lblThongTin_New.Text = ten.ToUpper();
+                LoadHocPhi(currentMaSV);
+            }
+        }
+
+        private void LoadDSSinhVien()
+        {
+            DataTable data = SinhVienDAO.Instance.GetListSinhVien();
+            dgvListSV_New.DataSource = data;
+
+            // ??i tên c?t v? ti?ng vi?t
+            dgvListSV_New.Columns["MaSV"].HeaderText = "Mã SV";
+            dgvListSV_New.Columns["HoTen"].HeaderText = "H? tên";
+            dgvListSV_New.Columns["NgaySinh"].HeaderText = "Ngày sinh";
+            dgvListSV_New.Columns["GioiTinh"].HeaderText = "Gi?i tính";
+            dgvListSV_New.Columns["SDT"].HeaderText = "S? ?i?n tho?i";
+            dgvListSV_New.Columns["Email"].HeaderText = "Email";
+            dgvListSV_New.Columns["DiaChi"].HeaderText = "??a ch?";
+            dgvListSV_New.Columns["CMND"].HeaderText = "CMND/CCCD";
+
+            dgvListSV_New.Columns["MaSV"].Width = 120;
+            dgvListSV_New.Columns["HoTen"].Width = 200;
+            dgvListSV_New.Columns["NgaySinh"].Width = 80;
+            dgvListSV_New.Columns["GioiTinh"].Width = 80;
+            dgvListSV_New.Columns["SDT"].Width = 100;
+            dgvListSV_New.Columns["Email"].Width = 180;
+            dgvListSV_New.Columns["DiaChi"].Width = 250;
+            dgvListSV_New.Columns["CMND"].Width = 120;
+
+            lblDaDong_New.Text = "?ã ?óng: " + GetTongTienDaDong().ToString("N0") + " VN?";
+            lblConNo_New.Text = "Còn n?: " + GetTongTienConNo().ToString("N0") + " VN?";
+        }
+
+        private void LoadHocPhi(string maSV)
+        {
+            // RESET TRANG HI?N TH?
+            lblDaDong_New.Text = "?ã ?óng: 0 VN?";
+            lblConNo_New.Text = "Còn n?: 0 VN?";
+            txbTongNo_New.Text = "0";
+            currentMaSV = maSV;
+
+            // TÌM THÔNG TIN SINH VIÊN
+            SinhVien sv = SinhVienDAO.Instance.GetSinhVienByMaSV(maSV);
+            if (sv == null) return;
+
+            // ?? D? LI?U LÊN FORM
+            txbSoTien_New.Text = "0";
+            txbTongNo_New.Text = sv.TongNo.ToString();
+            lblDaDong_New.Text = "?ã ?óng: " + sv.TongTienDaDong.ToString("N0") + " VN?";
+            lblConNo_New.Text = "Còn n?: " + sv.ConNo.ToString("N0") + " VN?";
+        }
+
+        private string GetTenSinhVien(string maSV)
+        {
+            SinhVien sv = SinhVienDAO.Instance.GetSinhVienByMaSV(maSV);
+            if (sv == null) return "";
+            return sv.HoTen;
+        }
+
+        private void btnCapNhatNo_Click(object sender, EventArgs e)
+        {
+            if (currentMaSV == null) return;
+
+            decimal tongNo;
+            if (!decimal.TryParse(txbTongNo_New.Text, out tongNo))
+            {
+                MessageBox.Show("T?ng n? không h?p l?.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // C?P NH?T T?NG N? CHO SINH VIÊN
+            if (SinhVienDAO.Instance.CapNhatTongNo(currentMaSV, tongNo))
+            {
+                MessageBox.Show("C?p nh?t t?ng n? thành công.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadDSSinhVien();
+                LoadHocPhi(currentMaSV);
+            }
+            else
+            {
+                MessageBox.Show("C?p nh?t t?ng n? th?t b?i.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnXacNhanDong_Click(object sender, EventArgs e)
+        {
+            if (currentMaSV == null) return;
+
+            decimal soTienDong;
+            if (!decimal.TryParse(txbSoTien_New.Text, out soTienDong) || soTienDong <= 0)
+            {
+                MessageBox.Show("S? ti?n ?óng không h?p l?.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // KI?M TRA TÍNH TI?N
+            decimal conNo = GetTongTienConNo();
+            if (conNo <= 0)
+            {
+                MessageBox.Show("Sinh viên này không còn n? h?c phí.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // TI?N HÀNH ?ÓNG TI?N
+            if (HocPhiDAO.Instance.DongTienHocPhi(currentMaSV, soTienDong))
+            {
+                MessageBox.Show("?óng ti?n h?c phí thành công.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadDSSinhVien();
+                LoadHocPhi(currentMaSV);
+            }
+            else
+            {
+                MessageBox.Show("?óng ti?n h?c phí th?t b?i.", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private decimal GetTongTienDaDong()
+        {
+            decimal sum = 0;
+            foreach (DataGridViewRow row in dgvListSV_New.Rows)
+            {
+                sum += Convert.ToDecimal(row.Cells["DaDong"].Value);
+            }
+            return sum;
+        }
+
+        private decimal GetTongTienConNo()
+        {
+            decimal sum = 0;
+            foreach (DataGridViewRow row in dgvListSV_New.Rows)
+            {
+                sum += Convert.ToDecimal(row.Cells["ConNo"].Value);
+            }
+            return sum;
+        }
+    }
+}
