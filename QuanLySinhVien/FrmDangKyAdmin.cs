@@ -1,403 +1,314 @@
-﻿    using System;
-    using System.Drawing;
-    using System.Data;
-    using System.Windows.Forms;
-    using QuanLyTrungTam.DAO;
+﻿using System;
+using System.Drawing;
+using System.Data;
+using System.Windows.Forms;
+using QuanLyTrungTam.DAO;
 
-    namespace QuanLyTrungTam
+namespace QuanLyTrungTam
+{
+    public partial class FrmDangKyAdmin : Form
     {
-        public partial class FrmDangKyAdmin : Form
+        // =========================================================================
+        // 1. KHAI BÁO CÁC CONTROL & BIẾN
+        // =========================================================================
+        private TextBox txbSearch;
+        private DataGridView dgvHocVien;
+
+        private ComboBox cbKyNang;
+        private ComboBox cbLopHoc;
+        private Label lblHocPhi;
+        private Button btnDangKy;
+        private DataGridView dgvDaDangKy;
+
+        private string currentMaHV = ""; // Lưu mã học viên đang được chọn
+
+        public FrmDangKyAdmin()
         {
-            // --- CONTROL GIAO DIỆN ---
-            private TextBox txbSearch = new TextBox();
-            private DataGridView dgvHocVien = new DataGridView();
+            SetupUI(); // Vẽ giao diện
+            LoadDataHocVien(""); // Load danh sách học viên
+            LoadKyNang(); // Load danh sách môn học vào ComboBox
+        }
 
-            private ComboBox cbKyNang = new ComboBox();
-            private ComboBox cbLopHoc = new ComboBox();
-            private Label lblHocPhi = new Label();
-            private Button btnDangKy = new Button();
-            private DataGridView dgvDaDangKy = new DataGridView();
+        // =========================================================================
+        // 2. THIẾT KẾ GIAO DIỆN (Code tay - Không dùng Designer)
+        // =========================================================================
+        private void SetupUI()
+        {
+            this.Text = "Quản Lý Đăng Ký & Hủy Môn";
+            this.BackColor = Color.White;
+            this.Size = new Size(1250, 750);
 
-            private string currentMaHV = "";
-            private string currentTenHV = "";
+            // --- A. HEADER ---
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 121, 107), Padding = new Padding(15) };
+            Label lblTitle = new Label { Text = "QUẢN LÝ ĐĂNG KÝ HỦY MÔN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 15) };
+            pnlHeader.Controls.Add(lblTitle);
+            this.Controls.Add(pnlHeader);
 
-            public FrmDangKyAdmin()
+            // --- B. SPLIT CONTAINER (Chia màn hình làm 2 phần) ---
+            SplitContainer split = new SplitContainer
             {
-                // InitializeComponent(); // Bỏ comment nếu dùng Designer, code tay thì tắt
-                SetupBalancedUI();
-                LoadDataHocVien("");
-                LoadKyNang();
+                Dock = DockStyle.Fill,
+                BackColor = Color.WhiteSmoke,
+                SplitterWidth = 8,
+                FixedPanel = FixedPanel.Panel1
+            };
+
+            // >>> PANEL TRÁI: DANH SÁCH HỌC VIÊN
+            GroupBox grpLeft = new GroupBox { Text = " 1. Chọn Học Viên ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray, BackColor = Color.White };
+            grpLeft.Padding = new Padding(10);
+
+            txbSearch = new TextBox { Dock = DockStyle.Top, Font = new Font("Segoe UI", 11), Height = 35 };
+            SetPlaceholder(txbSearch, "Nhập tên hoặc số điện thoại...");
+            txbSearch.TextChanged += (s, e) => LoadDataHocVien(txbSearch.Text); // Tìm kiếm ngay khi gõ
+
+            dgvHocVien = new DataGridView();
+            StyleGrid(dgvHocVien);
+            dgvHocVien.CellClick += DgvHocVien_CellClick; // Sự kiện chọn học viên
+
+            grpLeft.Controls.Add(dgvHocVien);
+            grpLeft.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 }); // Khoảng cách
+            grpLeft.Controls.Add(txbSearch);
+
+            split.Panel1.Padding = new Padding(10);
+            split.Panel1.Controls.Add(grpLeft);
+
+            // >>> PANEL PHẢI: FORM ĐĂNG KÝ
+            Panel pnlRight = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(20, 20, 10, 10) // Căn lề cho thoáng
+            };
+
+            // 1. Group Đăng Ký (Phần trên)
+            GroupBox grpReg = new GroupBox
+            {
+                Text = " 2. Đăng Ký Mới ",
+                Dock = DockStyle.Top,
+                Height = 220, // Chiều cao cố định cho khu vực nhập liệu
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = Color.Red,
+                BackColor = Color.White
+            };
+
+            // Label
+            Label lblMon = new Label { Text = "Môn Học:", Location = new Point(20, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblLop = new Label { Text = "Lớp Học:", Location = new Point(300, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblTien = new Label { Text = "Học Phí:", Location = new Point(580, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
+
+            // Control
+            cbKyNang = new ComboBox { Location = new Point(20, 65), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
+            cbLopHoc = new ComboBox { Location = new Point(300, 65), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
+            lblHocPhi = new Label { Text = "0 VNĐ", Location = new Point(580, 65), AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Color.Red };
+
+            // Nút Đăng Ký
+            btnDangKy = new Button { Text = "XÁC NHẬN ĐĂNG KÝ", Location = new Point(580, 120), Size = new Size(200, 45), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
+            btnDangKy.FlatAppearance.BorderSize = 0;
+
+            grpReg.Controls.AddRange(new Control[] { lblMon, lblLop, lblTien, cbKyNang, cbLopHoc, lblHocPhi, btnDangKy });
+
+            // 2. Group Lịch Sử (Phần dưới)
+            GroupBox grpList = new GroupBox { Text = " 3. Danh sách môn đã đăng ký (Nhấn nút Đỏ để Hủy) ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray, BackColor = Color.White };
+            grpList.Padding = new Padding(10);
+
+            dgvDaDangKy = new DataGridView();
+            StyleGrid(dgvDaDangKy);
+            dgvDaDangKy.CellContentClick += DgvDaDangKy_CellContentClick; // Sự kiện nút Hủy
+            grpList.Controls.Add(dgvDaDangKy);
+
+            // Add vào Panel phải
+            pnlRight.Controls.Add(grpList);
+            pnlRight.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 });
+            pnlRight.Controls.Add(grpReg);
+
+            split.Panel2.Controls.Add(pnlRight);
+            this.Controls.Add(split);
+            pnlHeader.BringToFront();
+
+            split.SplitterDistance = 400; // Độ rộng cột danh sách học viên
+
+            // Gán sự kiện logic
+            cbKyNang.SelectedIndexChanged += CbKyNang_SelectedIndexChanged;
+            btnDangKy.Click += BtnDangKy_Click;
+        }
+
+        // =========================================================================
+        // 3. LOGIC XỬ LÝ (Load Data, Click, Register, Cancel)
+        // =========================================================================
+
+        // Load danh sách học viên
+        void LoadDataHocVien(string keyword)
+        {
+            if (keyword == "Nhập tên hoặc số điện thoại...") keyword = "";
+
+            DataTable dt = HocVienDAO.Instance.GetListHocVien();
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%' OR SDT LIKE '%{0}%'", keyword);
+                dt = dt.DefaultView.ToTable();
+            }
+            dgvHocVien.DataSource = dt;
+
+            // Ẩn các cột không cần thiết cho gọn
+            string[] hide = { "NgaySinh", "Email", "DiaChi", "NgayGiaNhap", "MaLop", "MaKyNang" };
+            foreach (string c in hide) if (dgvHocVien.Columns.Contains(c)) dgvHocVien.Columns[c].Visible = false;
+        }
+
+        // Khi click chọn học viên
+        private void DgvHocVien_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                DataGridViewRow r = dgvHocVien.Rows[e.RowIndex];
+                currentMaHV = r.Cells["MaHV"].Value.ToString();
+
+                // Cập nhật giao diện tiêu đề
+                GroupBox grp = (GroupBox)btnDangKy.Parent;
+                grp.Text = $" 2. Đăng Ký Cho: {r.Cells["HoTen"].Value.ToString().ToUpper()} ({currentMaHV})";
+
+                LoadDanhSachDaDangKy(); // Load lịch sử đăng ký của người này
+            }
+        }
+
+        // Load danh sách các môn ĐÃ đăng ký
+        void LoadDanhSachDaDangKy()
+        {
+            dgvDaDangKy.DataSource = TuitionDAO.Instance.GetListDangKy(currentMaHV);
+
+            // Thêm nút Hủy nếu chưa có
+            if (!dgvDaDangKy.Columns.Contains("btnHuy"))
+            {
+                DataGridViewButtonColumn btn = new DataGridViewButtonColumn();
+                btn.Name = "btnHuy"; btn.HeaderText = ""; btn.Text = "Hủy Lớp";
+                btn.UseColumnTextForButtonValue = true; btn.FlatStyle = FlatStyle.Flat;
+                btn.DefaultCellStyle.BackColor = Color.IndianRed; btn.DefaultCellStyle.ForeColor = Color.White;
+                dgvDaDangKy.Columns.Add(btn);
             }
 
-            // =================================================================================
-            // 1. THIẾT KẾ GIAO DIỆN (RESPONSIVE - DOCKING - AUTOSCROLL)
-            // =================================================================================
-            private void SetupBalancedUI()
+            // Định dạng tiền tệ
+            if (dgvDaDangKy.Columns.Contains("HocPhiLop"))
             {
-                // 1. Cấu hình Form chính
-                this.Text = "Quản Lý Đăng Ký Tuyển Sinh";
-                this.BackColor = Color.WhiteSmoke;
-                this.WindowState = FormWindowState.Maximized;
-                this.Font = new Font("Segoe UI", 10F);
-
-                // [QUAN TRỌNG] Thiết lập kích thước tối thiểu để Form không bị kéo quá bé
-                this.MinimumSize = new Size(1000, 600);
-
-                // 2. HEADER
-                Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = ColorTranslator.FromHtml("#00796B"), Padding = new Padding(20) };
-                Label lblTitle = new Label { Text = "QUẢN LÝ ĐĂNG KÝ HỦY MÔN", Font = new Font("Segoe UI", 18, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 20) };
-                pnlHeader.Controls.Add(lblTitle);
-
-                // 3. KHỞI TẠO SPLIT CONTAINER (Chia màn hình Trái - Phải)
-                SplitContainer split = new SplitContainer { Dock = DockStyle.Fill, SplitterWidth = 8, BackColor = Color.LightGray };
-
-                // Fix lỗi init kích thước
-                split.Width = 1200;
-                split.FixedPanel = FixedPanel.Panel1;
-                split.Panel1MinSize = 350;
-                split.SplitterDistance = 450;
-                this.WindowState = FormWindowState.Maximized;
-            // =========================================================================
-            // A. CỘT TRÁI: DANH SÁCH HỌC VIÊN
-            // =========================================================================
-                 GroupBox grpLeft = new GroupBox { Text = " 1. Chọn Học Viên ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 11, FontStyle.Bold), ForeColor = Color.DimGray, BackColor = Color.White };
-                grpLeft.Padding = new Padding(10);
-
-                // Ô Tìm kiếm (Dock Top)
-                txbSearch.Dock = DockStyle.Top; txbSearch.Font = new Font("Segoe UI", 12); txbSearch.Height = 35;
-                SetPlaceholder(txbSearch, "🔍 Nhập tên hoặc số điện thoại...");
-                txbSearch.TextChanged += (s, e) => LoadDataHocVien(txbSearch.Text);
-
-                Panel spacerLeft = new Panel { Dock = DockStyle.Top, Height = 10, BackColor = Color.White };
-
-                // Grid Học Viên (Dock Fill)
-                StyleGrid(dgvHocVien);
-                dgvHocVien.CellClick += DgvHocVien_CellClick;
-
-                grpLeft.Controls.Add(dgvHocVien);
-                grpLeft.Controls.Add(spacerLeft);
-                grpLeft.Controls.Add(txbSearch);
-                split.Panel1.Controls.Add(grpLeft);
-                split.Panel1.Padding = new Padding(10);
-
-                // =========================================================================
-                // B. CỘT PHẢI: FORM ĐĂNG KÝ (FULL DOCKING & AUTO SCROLL)
-                // =========================================================================
-                Panel pnlRight = new Panel { Dock = DockStyle.Fill, BackColor = Color.WhiteSmoke };
-
-                // [CỰC KỲ QUAN TRỌNG] Bật tính năng tự động cuộn khi thu nhỏ cửa sổ
-                pnlRight.AutoScroll = true;
-
-                // --- B1. FORM ĐĂNG KÝ (PHẦN TRÊN) ---
-                GroupBox grpAction = new GroupBox
-                {
-                    Text = " 2. Đăng Ký Mới ",
-                    Dock = DockStyle.Top,
-                    Height = 260,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                    ForeColor = Color.DimGray,
-                    BackColor = Color.White
-                };
-                // Đảm bảo GroupBox này không bao giờ bị bóp méo chiều cao khi thu nhỏ
-                grpAction.MinimumSize = new Size(0, 260);
-
-                // Sử dụng TableLayout để chia cột 60% - 40%
-                TableLayoutPanel tblLayout = new TableLayoutPanel();
-                tblLayout.Dock = DockStyle.Fill;
-                tblLayout.ColumnCount = 2;
-                tblLayout.RowCount = 1;
-                tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F)); // Cột nhập liệu rộng hơn
-                tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F)); // Cột nút bấm
-                tblLayout.Padding = new Padding(10);
-
-                // [[ Cột 1: Nhập liệu ]]
-                Panel pnlCol1 = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 20, 0) };
-
-                // Wrapper Môn Học (Dùng Panel Dock Top để chứa Label và Combo)
-                Panel pnlMonHoc = new Panel { Dock = DockStyle.Top, Height = 70 };
-                Label lblMon = new Label { Text = "Môn Học:", Dock = DockStyle.Top, Height = 25, Font = new Font("Segoe UI", 10, FontStyle.Regular), ForeColor = Color.Black };
-                cbKyNang.Dock = DockStyle.Top; cbKyNang.Height = 35; cbKyNang.DropDownStyle = ComboBoxStyle.DropDownList; cbKyNang.Font = new Font("Segoe UI", 11);
-                cbKyNang.SelectedIndexChanged += CbKyNang_SelectedIndexChanged;
-                pnlMonHoc.Controls.Add(cbKyNang); pnlMonHoc.Controls.Add(lblMon); // Add Label trước rồi đến Combo vì Dock Top xếp chồng xuống
-
-                // Wrapper Lớp Học
-                Panel pnlLopHoc = new Panel { Dock = DockStyle.Top, Height = 70 };
-                Label lblLop = new Label { Text = "Lớp Học:", Dock = DockStyle.Top, Height = 25, Font = new Font("Segoe UI", 10, FontStyle.Regular), ForeColor = Color.Black };
-                cbLopHoc.Dock = DockStyle.Top; cbLopHoc.Height = 35; cbLopHoc.DropDownStyle = ComboBoxStyle.DropDownList; cbLopHoc.Font = new Font("Segoe UI", 11);
-                pnlLopHoc.Controls.Add(cbLopHoc); pnlLopHoc.Controls.Add(lblLop);
-
-                // Add các wrapper vào Cột 1
-                // Mẹo: Khi dùng Dock=Top, cái nào Add SAU CÙNG sẽ nằm TRÊN CÙNG.
-                // Hoặc dùng BringToFront để kiểm soát. Ở đây ta Add Môn Học trước, Lớp Học sau, rồi chỉnh thứ tự.
-                pnlCol1.Controls.Add(pnlLopHoc);
-                pnlCol1.Controls.Add(pnlMonHoc);
-                pnlMonHoc.BringToFront(); // Đẩy Môn học lên trên cùng
-
-                // [[ Cột 2: Giá & Nút ]]
-                Panel pnlCol2 = new Panel { Dock = DockStyle.Fill };
-
-                Label lblTieuDeGia = new Label { Text = "Học Phí:", Dock = DockStyle.Top, Height = 25, Font = new Font("Segoe UI", 10, FontStyle.Regular), ForeColor = Color.Black };
-                lblHocPhi.Text = "0 VNĐ"; lblHocPhi.Dock = DockStyle.Top; lblHocPhi.Height = 45;
-                lblHocPhi.Font = new Font("Segoe UI", 20, FontStyle.Bold); lblHocPhi.ForeColor = Color.Red;
-
-                btnDangKy.Text = "XÁC NHẬN ĐĂNG KÝ";
-                btnDangKy.Dock = DockStyle.Top; btnDangKy.Height = 50;
-                btnDangKy.BackColor = ColorTranslator.FromHtml("#FFC107");
-                btnDangKy.FlatStyle = FlatStyle.Flat; btnDangKy.FlatAppearance.BorderSize = 0;
-                btnDangKy.Font = new Font("Segoe UI", 10, FontStyle.Bold); btnDangKy.ForeColor = Color.Black;
-                btnDangKy.Cursor = Cursors.Hand;
-                btnDangKy.Click += BtnDangKy_Click;
-
-                Panel spacerBtn = new Panel { Dock = DockStyle.Top, Height = 10 };
-
-                pnlCol2.Controls.Add(btnDangKy);
-                pnlCol2.Controls.Add(spacerBtn);
-                pnlCol2.Controls.Add(lblHocPhi);
-                pnlCol2.Controls.Add(lblTieuDeGia);
-
-                tblLayout.Controls.Add(pnlCol1, 0, 0);
-                tblLayout.Controls.Add(pnlCol2, 1, 0);
-                grpAction.Controls.Add(tblLayout);
-
-                // --- B2. DANH SÁCH LỊCH SỬ (PHẦN DƯỚI) ---
-                GroupBox grpHistory = new GroupBox
-                {
-                    Text = " Các lớp học viên này đã đăng ký (Bấm nút Đỏ để Hủy) ",
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                    ForeColor = Color.DimGray,
-                    BackColor = Color.White
-                };
-                // [QUAN TRỌNG] Đảm bảo bảng bên dưới luôn có chiều cao tối thiểu 200px
-                // Nếu không đủ chỗ, thanh cuộn của pnlRight sẽ hiện ra
-                grpHistory.MinimumSize = new Size(0, 200);
-                grpHistory.Padding = new Padding(10);
-
-                StyleGrid(dgvDaDangKy);
-                dgvDaDangKy.CellContentClick += DgvDaDangKy_CellContentClick;
-                grpHistory.Controls.Add(dgvDaDangKy);
-
-                // --- B3. RÁP VÀO CỘT PHẢI ---
-                // Add theo thứ tự để Dock hoạt động đúng:
-                pnlRight.Controls.Add(grpHistory); // Dock Fill (Nằm dưới/Chiếm hết chỗ còn lại)
-                pnlRight.Controls.Add(grpAction);  // Dock Top (Nằm trên)
-
-                // Đảm bảo grpAction được ưu tiên xếp trước (Dock Top)
-                grpAction.BringToFront();
-
-                split.Panel2.Controls.Add(pnlRight);
-                split.Panel2.Padding = new Padding(10);
-
-                // 4. ADD VÀO FORM
-                this.Controls.Add(split);
-                this.Controls.Add(pnlHeader);
-
-                pnlHeader.SendToBack(); // Header chìm xuống (được vẽ trước)
-                split.BringToFront();   // Split nổi lên
+                dgvDaDangKy.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
+                dgvDaDangKy.Columns["HocPhiLop"].HeaderText = "Học Phí";
             }
 
-            // =================================================================================
-            // CÁC HÀM HỖ TRỢ GIAO DIỆN
-            // =================================================================================
-            private void StyleGrid(DataGridView dgv)
+            // Ẩn cột thừa
+            string[] hide = { "MaLop", "NgayDangKy", "MaHV" };
+            foreach (string c in hide) if (dgvDaDangKy.Columns.Contains(c)) dgvDaDangKy.Columns[c].Visible = false;
+        }
+
+        // Xử lý sự kiện HỦY LỚP (Click nút đỏ trong Grid)
+        private void DgvDaDangKy_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && dgvDaDangKy.Columns[e.ColumnIndex].Name == "btnHuy")
             {
-                dgv.Dock = DockStyle.Fill;
-                dgv.BackgroundColor = Color.White;
-                dgv.BorderStyle = BorderStyle.FixedSingle;
-                dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-                dgv.RowHeadersVisible = false;
-                dgv.AllowUserToAddRows = false;
-                dgv.ReadOnly = true;
-                dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-                dgv.RowTemplate.Height = 35;
-                dgv.ColumnHeadersHeight = 40;
-                dgv.EnableHeadersVisualStyles = false;
-                dgv.ColumnHeadersDefaultCellStyle.BackColor = ColorTranslator.FromHtml("#00796B");
-                dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-                dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-                dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10);
-                dgv.DefaultCellStyle.SelectionBackColor = ColorTranslator.FromHtml("#B2DFDB");
-                dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
-            }
+                string tenLop = dgvDaDangKy.Rows[e.RowIndex].Cells["TenLop"].Value.ToString();
+                string maLop = dgvDaDangKy.Rows[e.RowIndex].Cells["MaLop"].Value.ToString();
 
-            private void SetPlaceholder(TextBox txt, string holder)
-            {
-                txt.Text = holder; txt.ForeColor = Color.Gray;
-                txt.Enter += (s, e) => { if (txt.Text == holder) { txt.Text = ""; txt.ForeColor = Color.Black; } };
-                txt.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txt.Text)) { txt.Text = holder; txt.ForeColor = Color.Gray; } };
-            }
-
-            // =================================================================================
-            // 2. LOGIC XỬ LÝ (GIỮ NGUYÊN)
-            // =================================================================================
-
-            void LoadDataHocVien(string keyword)
-            {
-                DataTable dt = HocVienDAO.Instance.GetListHocVien();
-                if (dt == null) return;
-
-                if (!string.IsNullOrEmpty(keyword) && keyword != "🔍 Nhập tên hoặc số điện thoại...")
+                if (MessageBox.Show($"Hủy lớp {tenLop}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
-                    dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%' OR SoDienThoai LIKE '%{0}%'", keyword);
-                }
-                dgvHocVien.DataSource = dt;
-
-                // Ẩn cột không cần thiết
-                string[] hide = { "DiaChi", "NgaySinh", "Email", "NgayGiaNhap", "MaLop", "MaKyNang" };
-                foreach (string c in hide) if (dgvHocVien.Columns.Contains(c)) dgvHocVien.Columns[c].Visible = false;
-
-                if (dgvHocVien.Columns.Contains("MaHV")) { dgvHocVien.Columns["MaHV"].HeaderText = "Mã HV"; dgvHocVien.Columns["MaHV"].Width = 100; }
-                if (dgvHocVien.Columns.Contains("HoTen")) { dgvHocVien.Columns["HoTen"].HeaderText = "Họ Tên"; dgvHocVien.Columns["HoTen"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill; }
-                if (dgvHocVien.Columns.Contains("SoDienThoai")) { dgvHocVien.Columns["SoDienThoai"].HeaderText = "SĐT"; dgvHocVien.Columns["SoDienThoai"].Width = 120; }
-
-                // --- [FIX LỖI TRẮNG BẢNG] TỰ ĐỘNG CHỌN DÒNG ĐẦU TIÊN ---
-                if (dgvHocVien.Rows.Count > 0)
-                {
-                    // 1. Chọn dòng đầu về mặt hiển thị
-                    dgvHocVien.Rows[0].Selected = true;
-
-                    // 2. [QUAN TRỌNG] Kích hoạt sự kiện CellClick bằng cơm (thủ công)
-                    // Vì DataGridView không tự gọi sự kiện này khi mới load
-                    DgvHocVien_CellClick(dgvHocVien, new DataGridViewCellEventArgs(0, 0));
-                }
-            }
-
-            private void DgvHocVien_CellClick(object sender, DataGridViewCellEventArgs e)
-            {
-                if (e.RowIndex >= 0)
-                {
-                    DataGridViewRow row = dgvHocVien.Rows[e.RowIndex];
-                    currentMaHV = row.Cells["MaHV"].Value.ToString();
-                    currentTenHV = row.Cells["HoTen"].Value.ToString();
-
-                    // TÌM GROUPBOX CHA ĐỂ ĐỔI TÊN (Sử dụng vòng lặp an toàn)
-                    Control parent = btnDangKy.Parent;
-                    while (parent != null && !(parent is GroupBox))
+                    if (TuitionDAO.Instance.HuyDangKy(currentMaHV, maLop))
                     {
-                        parent = parent.Parent;
+                        MessageBox.Show("Đã hủy thành công.");
+                        LoadDanhSachDaDangKy(); // Refresh lại lưới
                     }
-
-                    if (parent != null)
-                    {
-                        parent.Text = $" 2. Đăng ký cho: {currentTenHV.ToUpper()} ({currentMaHV}) ";
-                        parent.ForeColor = ColorTranslator.FromHtml("#D32F2F");
-                    }
-
-                    LoadDanhSachDaDangKy();
+                    else MessageBox.Show("Lỗi: Không thể hủy lớp này!");
                 }
             }
+        }
 
-            void LoadDanhSachDaDangKy()
+        // Load danh sách kỹ năng (Môn học)
+        void LoadKyNang()
+        {
+            cbKyNang.DataSource = KyNangDAO.Instance.GetListKyNang();
+            cbKyNang.DisplayMember = "TenKyNang";
+            cbKyNang.ValueMember = "MaKyNang";
+        }
+
+        // Khi chọn Môn -> Tự động load Lớp tương ứng & Hiển thị học phí
+        private void CbKyNang_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cbKyNang.SelectedValue != null)
             {
-                dgvDaDangKy.DataSource = TuitionDAO.Instance.GetListDangKy(currentMaHV);
-
-                if (dgvDaDangKy.Columns.Contains("colHuy")) dgvDaDangKy.Columns.Remove("colHuy");
-
-                DataGridViewButtonColumn btnCancel = new DataGridViewButtonColumn();
-                btnCancel.Name = "colHuy";
-                btnCancel.HeaderText = "Thao tác";
-                btnCancel.Text = "Hủy Đăng Ký";
-                btnCancel.UseColumnTextForButtonValue = true;
-                btnCancel.FlatStyle = FlatStyle.Flat;
-                btnCancel.DefaultCellStyle.BackColor = Color.Red;
-                btnCancel.DefaultCellStyle.ForeColor = Color.White;
-                btnCancel.DefaultCellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
-
-                dgvDaDangKy.Columns.Add(btnCancel);
-
-                if (dgvDaDangKy.Columns.Contains("TenKyNang")) dgvDaDangKy.Columns["TenKyNang"].HeaderText = "Môn Học";
-                if (dgvDaDangKy.Columns.Contains("TenLop")) dgvDaDangKy.Columns["TenLop"].HeaderText = "Lớp";
-                if (dgvDaDangKy.Columns.Contains("HocPhiLop"))
+                DataRowView row = cbKyNang.SelectedItem as DataRowView;
+                if (row != null)
                 {
-                    dgvDaDangKy.Columns["HocPhiLop"].HeaderText = "Học Phí";
-                    dgvDaDangKy.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
-                }
-                if (dgvDaDangKy.Columns.Contains("NgayDangKy")) dgvDaDangKy.Columns["NgayDangKy"].Visible = false;
-                if (dgvDaDangKy.Columns.Contains("MaLop")) dgvDaDangKy.Columns["MaLop"].Visible = false;
-            }
+                    // 1. Hiển thị học phí
+                    decimal hp = row["HocPhi"] != DBNull.Value ? Convert.ToDecimal(row["HocPhi"]) : 0;
+                    lblHocPhi.Text = hp.ToString("N0") + " VNĐ";
+                    lblHocPhi.Tag = hp; // Lưu giá trị gốc để tính toán
 
-            private void DgvDaDangKy_CellContentClick(object sender, DataGridViewCellEventArgs e)
-            {
-                if (e.ColumnIndex == dgvDaDangKy.Columns["colHuy"].Index && e.RowIndex >= 0)
-                {
-                    string tenLop = dgvDaDangKy.Rows[e.RowIndex].Cells["TenLop"].Value.ToString();
-                    string maLop = dgvDaDangKy.Rows[e.RowIndex].Cells["MaLop"].Value.ToString();
+                    // 2. Load lớp học, CHỈ LẤY LỚP SẮP MỞ hoặc ĐANG HỌC
+                    string maKN = row["MaKyNang"].ToString();
+                    DataTable dtLop = LopHocDAO.Instance.GetListLopByKyNang(maKN);
 
-                    if (MessageBox.Show($"Bạn có chắc chắn muốn hủy đăng ký lớp: {tenLop}?", "Xác nhận hủy", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
-                    {
-                        if (TuitionDAO.Instance.HuyDangKy(currentMaHV, maLop))
-                        {
-                            MessageBox.Show("Đã hủy đăng ký thành công!");
-                            LoadDanhSachDaDangKy();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Lỗi khi hủy đăng ký. Vui lòng thử lại.");
-                        }
-                    }
+                    DataView dvLop = new DataView(dtLop);
+                    dvLop.RowFilter = "TrangThai = 'Sắp mở' OR TrangThai = 'Đang học'";
+
+                    cbLopHoc.DataSource = dvLop;
+                    cbLopHoc.DisplayMember = "TenLop";
+                    cbLopHoc.ValueMember = "MaLop";
                 }
             }
+        }
 
-            void LoadKyNang()
+        // Xử lý sự kiện ĐĂNG KÝ
+        private void BtnDangKy_Click(object sender, EventArgs e)
+        {
+            // 1. Validate
+            if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
+            if (cbLopHoc.SelectedValue == null) { MessageBox.Show("Vui lòng chọn lớp học!"); return; }
+
+            // 2. Lấy dữ liệu
+            string maLop = cbLopHoc.SelectedValue.ToString();
+            decimal hp = Convert.ToDecimal(lblHocPhi.Tag);
+
+            // 3. Gọi DAO thực hiện
+            if (TuitionDAO.Instance.DangKyLop(currentMaHV, maLop, hp))
             {
-                cbKyNang.DataSource = KyNangDAO.Instance.GetListKyNang();
-                cbKyNang.DisplayMember = "TenKyNang";
-                cbKyNang.ValueMember = "MaKyNang";
+                MessageBox.Show("Đăng ký thành công!");
+                LoadDanhSachDaDangKy();
             }
+            else MessageBox.Show("Học viên đã có trong lớp này rồi!");
+        }
 
-            private void CbKyNang_SelectedIndexChanged(object sender, EventArgs e)
-            {
-                if (cbKyNang.SelectedValue != null)
-                {
-                    DataRowView row = cbKyNang.SelectedItem as DataRowView;
-                    if (row != null)
-                    {
-                        decimal hp = row["HocPhi"] != DBNull.Value ? Convert.ToDecimal(row["HocPhi"]) : 0;
-                        lblHocPhi.Text = hp.ToString("N0") + " VNĐ";
-                        lblHocPhi.Tag = hp;
+        // --- HÀM HỖ TRỢ ---
 
-                        string maKN = row["MaKyNang"].ToString();
-                        cbLopHoc.DataSource = LopHocDAO.Instance.GetListLopByKyNang(maKN);
-                        cbLopHoc.DisplayMember = "TenLop";
-                        cbLopHoc.ValueMember = "MaLop";
-                    }
-                }
-            }
-        // Mở file FrmDangKyAdmin.cs, thêm method này vào
+        // Hàm gọi từ Form khác để tự động chọn học viên (Ví dụ từ Dashboard chuyển sang)
         public void AutoSelectStudent(string maHV)
         {
-            // Gán vào ô tìm kiếm
             txbSearch.Text = maHV;
+            txbSearch.ForeColor = Color.Black; // Reset placeholder color
+            LoadDataHocVien(maHV);
 
-            // Gọi hàm load lại dữ liệu (dựa trên keyword)
-            LoadDataHocVien(maHV); // Hàm này bạn đã có ở dòng 1400
-
-            // Tự động chọn học viên đó
             if (dgvHocVien.Rows.Count > 0)
             {
                 dgvHocVien.Rows[0].Selected = true;
-                // Kích hoạt sự kiện click để load lịch sử đăng ký
-                DgvHocVien_CellClick(dgvHocVien, new DataGridViewCellEventArgs(0, 0));
+                DgvHocVien_CellClick(null, new DataGridViewCellEventArgs(0, 0));
             }
         }
 
-        private void BtnDangKy_Click(object sender, EventArgs e)
-            {
-                if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên ở cột bên trái trước!"); return; }
-                if (cbLopHoc.SelectedValue == null) { MessageBox.Show("Vui lòng chọn lớp học!"); return; }
+        private void StyleGrid(DataGridView dgv)
+        {
+            dgv.Dock = DockStyle.Fill;
+            dgv.BackgroundColor = Color.White;
+            dgv.BorderStyle = BorderStyle.None;
+            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgv.ReadOnly = true;
+            dgv.AllowUserToAddRows = false;
+            dgv.RowHeadersVisible = false;
+            dgv.ColumnHeadersHeight = 35;
+            dgv.EnableHeadersVisualStyles = false;
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+        }
 
-                string maLop = cbLopHoc.SelectedValue.ToString();
-                decimal hocPhi = lblHocPhi.Tag != null ? Convert.ToDecimal(lblHocPhi.Tag) : 0;
-
-                if (TuitionDAO.Instance.DangKyLop(currentMaHV, maLop, hocPhi))
-                {
-                    MessageBox.Show($"Đăng ký thành công lớp {cbLopHoc.Text} cho học viên {currentTenHV}!");
-                    LoadDanhSachDaDangKy();
-                }
-                else
-                {
-                    MessageBox.Show("Học viên này đã đăng ký lớp này rồi!", "Trùng đăng ký", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
+        private void SetPlaceholder(TextBox txt, string holder)
+        {
+            txt.Text = holder; txt.ForeColor = Color.Gray;
+            txt.Enter += (s, e) => { if (txt.Text == holder) { txt.Text = ""; txt.ForeColor = Color.Black; } };
+            txt.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txt.Text)) { txt.Text = holder; txt.ForeColor = Color.Gray; } };
         }
     }
+}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Printing;
 using System.Data;
 using System.Windows.Forms;
 using QuanLyTrungTam.DAO;
@@ -8,182 +9,138 @@ namespace QuanLyTrungTam
 {
     public partial class FrmTraCuuHocPhi : Form
     {
-        // --- KHAI BÁO CONTROL ---
+        // --- 1. KHAI BÁO CONTROL ---
         private TextBox txbSearch = new TextBox();
         private DataGridView dgvSearchResult = new DataGridView();
         private DataGridView dgvLopHoc = new DataGridView();
         private Label lblTaiChinh = new Label();
-        private TextBox txbDongTien = new TextBox();
+        private Button btnLapHoaDon;
+
         private string currentMaHV = "";
+
+        // Biến in ấn
+        private string _printTenHV = "";
+        private string _printSoTien = "";
+        private string _printHinhThuc = "";
 
         public FrmTraCuuHocPhi()
         {
-            // InitializeComponent(); // Bỏ comment nếu cần
-            SetupBetterUI();    // <--- Giao diện mới đẹp hơn
-            LoadSearchData(""); // Load dữ liệu ban đầu
+            SetupBetterUI();
+            LoadSearchData("");
         }
 
         // =================================================================================
-        // 1. THIẾT KẾ GIAO DIỆN (BEAUTIFUL UI)
+        // GIAO DIỆN FORM CHÍNH
         // =================================================================================
         private void SetupBetterUI()
         {
-            this.Text = "Tra Cứu Thu Học Phí";
+            this.Text = "Tra Cứu & Thu Học Phí";
             this.BackColor = Color.WhiteSmoke;
             this.WindowState = FormWindowState.Maximized;
-            this.Font = new Font("Segoe UI", 10F); // Font chuẩn toàn form
+            this.Font = new Font("Segoe UI", 10F);
 
-            // --- A. HEADER (THANH TÌM KIẾM) ---
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.White, Padding = new Padding(20, 10, 20, 10) };
-
-            Label lblTitle = new Label { Text = "TRA CỨU HỌC VIÊN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = ColorTranslator.FromHtml("#009688"), AutoSize = true, Location = new Point(20, 15) };
-
-            // Ô tìm kiếm đẹp hơn
-            txbSearch.Location = new Point(350, 18);
-            txbSearch.Width = 400;
-            txbSearch.Font = new Font("Segoe UI", 11);
+            // HEADER
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White };
+            Label lblTitle = new Label { Text = "TRA CỨU HỌC VIÊN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = ColorTranslator.FromHtml("#009688"), AutoSize = true, Location = new Point(20, 22) };
+            txbSearch.Location = new Point(350, 22); txbSearch.Width = 400; txbSearch.Font = new Font("Segoe UI", 11);
             SetPlaceholder(txbSearch, "🔍 Nhập tên hoặc mã học viên...");
             txbSearch.TextChanged += Logic_SearchHV;
-
             pnlHeader.Controls.AddRange(new Control[] { lblTitle, txbSearch });
             this.Controls.Add(pnlHeader);
 
-            // --- B. BODY (CHIA 2 CỘT) ---
+            // BODY
             SplitContainer split = new SplitContainer { Dock = DockStyle.Fill, SplitterWidth = 10, BackColor = Color.WhiteSmoke };
-            split.Width = 1200; // Gán tạm chiều rộng lớn để tránh lỗi tính toán
-                                // -------------------------------
 
-            // Sau đó mới set các thông số khác
-            split.FixedPanel = FixedPanel.Panel1;
-            split.Panel1MinSize = 350; // Giới hạn nhỏ nhất
-            split.SplitterDistance = 400; // Bây giờ set 500 sẽ không lỗi vì 500 < 1200
-            // >>> TRÁI: DANH SÁCH HỌC VIÊN
-          //  split.Dock = DockStyle.Fill;
-            split.Panel2MinSize = 350;
-            // GroupBox danh sách
+            // TRÁI
             GroupBox grpList = new GroupBox { Text = " Danh sách học viên ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray };
             grpList.Padding = new Padding(10);
-
-            // GridView Trái
             StyleGrid(dgvSearchResult);
             dgvSearchResult.CellClick += Logic_ChonHV;
             grpList.Controls.Add(dgvSearchResult);
             split.Panel1.Controls.Add(grpList);
-            split.Panel1.Padding = new Padding(10); // Padding cho cột trái
+            split.Panel1.Padding = new Padding(10);
 
-            // >> CỘT PHẢI: CHI TIẾT (70% màn hình)
+            // PHẢI
             Panel pnlRightContent = new Panel { Dock = DockStyle.Fill };
-
-            // 1. Phần Trên: Danh sách lớp
             GroupBox grpLop = new GroupBox { Text = " Các lớp đang theo học ", Dock = DockStyle.Top, Height = 250, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray };
             grpLop.Padding = new Padding(10);
-
             StyleGrid(dgvLopHoc);
             grpLop.Controls.Add(dgvLopHoc);
 
-            // 2. Phần Giữa: Hiển thị Nợ (To, Rõ)
             Panel pnlDebt = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
             lblTaiChinh.Dock = DockStyle.Fill;
-            lblTaiChinh.TextAlign = ContentAlignment.MiddleCenter;
+            lblTaiChinh.TextAlign = ContentAlignment.MiddleCenter; // Căn giữa lại như cũ
             lblTaiChinh.Font = new Font("Segoe UI", 14);
             lblTaiChinh.Text = "👈 Vui lòng chọn học viên từ danh sách bên trái";
             pnlDebt.Controls.Add(lblTaiChinh);
 
-            // 3. Phần Dưới: Thanh toán (Căn chỉnh thẳng hàng)
-            Panel pnlPay = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = ColorTranslator.FromHtml("#E8F5E9") }; // Màu xanh nhạt dịu mắt
+            // PANEL THANH TOÁN
+            Panel pnlPay = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = ColorTranslator.FromHtml("#E8F5E9") };
             pnlPay.BorderStyle = BorderStyle.FixedSingle;
+            btnLapHoaDon = new Button { Text = "📝 LẬP HÓA ĐƠN THANH TOÁN", Dock = DockStyle.Fill, BackColor = ColorTranslator.FromHtml("#FF9800"), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 14, FontStyle.Bold), Cursor = Cursors.Hand };
+            Panel pnlBtnContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(200, 15, 200, 15), BackColor = Color.Transparent };
+            pnlBtnContainer.Controls.Add(btnLapHoaDon);
+            btnLapHoaDon.Click += BtnLapHoaDon_Click;
+            pnlPay.Controls.Add(pnlBtnContainer);
 
-            Label lblPayTitle = new Label { Text = "Thu Phí:", Location = new Point(30, 28), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
-
-            txbDongTien.Location = new Point(120, 25);
-            txbDongTien.Width = 200;
-            txbDongTien.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-            txbDongTien.ForeColor = Color.DarkRed;
-            txbDongTien.TextAlign = HorizontalAlignment.Right; // Số nằm bên phải
-
-            Button btnPay = new Button { Text = "XÁC NHẬN THU", Location = new Point(340, 22), Size = new Size(160, 35) };
-            btnPay.FlatStyle = FlatStyle.Flat;
-            btnPay.FlatAppearance.BorderSize = 0;
-            btnPay.BackColor = ColorTranslator.FromHtml("#FFC107"); // Màu vàng Amber
-            btnPay.ForeColor = Color.Black;
-            btnPay.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            btnPay.Cursor = Cursors.Hand;
-            btnPay.Click += Logic_ThanhToanTrucTiep;
-
-            pnlPay.Controls.AddRange(new Control[] { lblPayTitle, txbDongTien, btnPay });
-
-            // Ráp vào cột phải
-            pnlRightContent.Controls.Add(pnlDebt); // Giữa (Fill)
-            pnlRightContent.Controls.Add(pnlPay);  // Đáy
-            pnlRightContent.Controls.Add(grpLop);  // Đỉnh
+            pnlRightContent.Controls.Add(pnlDebt);
+            pnlRightContent.Controls.Add(pnlPay);
+            pnlRightContent.Controls.Add(grpLop);
 
             split.Panel2.Controls.Add(pnlRightContent);
-            split.Panel2.Padding = new Padding(0, 10, 10, 10); // Padding cột phải
+            split.Panel2.Padding = new Padding(0, 10, 10, 10);
 
             this.Controls.Add(split);
             this.Controls.Add(pnlHeader);
         }
 
-        // --- HÀM TRANG TRÍ GRID VIEW ĐẸP ---
         private void StyleGrid(DataGridView dgv)
         {
-            dgv.Dock = DockStyle.Fill;
-            dgv.BackgroundColor = Color.White;
-            dgv.BorderStyle = BorderStyle.None;
-            dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-            dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgv.RowHeadersVisible = false;
-            dgv.AllowUserToAddRows = false;
-            dgv.ReadOnly = true;
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.RowTemplate.Height = 35; // Dòng cao thoáng
-
-            // Header Style
+            dgv.Dock = DockStyle.Fill; dgv.BackgroundColor = Color.White; dgv.BorderStyle = BorderStyle.None;
+            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect; dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv.RowHeadersVisible = false; dgv.ReadOnly = true; dgv.RowTemplate.Height = 35;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = ColorTranslator.FromHtml("#009688"); // Xanh Teal
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = ColorTranslator.FromHtml("#009688");
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgv.ColumnHeadersHeight = 40;
-
-            // Cell Style
-            dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10);
-            dgv.DefaultCellStyle.ForeColor = Color.Black;
-            dgv.DefaultCellStyle.SelectionBackColor = ColorTranslator.FromHtml("#B2DFDB"); // Xanh nhạt khi chọn
-            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
         }
 
         // =================================================================================
-        // 2. LOGIC XỬ LÝ (GIỮ NGUYÊN LOGIC CŨ ĐÃ FIX LỖI)
+        // LOGIC DỮ LIỆU
         // =================================================================================
-
         void LoadSearchData(string keyword)
         {
             DataTable dt = HocVienDAO.Instance.GetListHocVien();
             if (dt == null) return;
+            if (!dt.Columns.Contains("TrangThaiHocPhi")) dt.Columns.Add("TrangThaiHocPhi", typeof(string));
 
-            if (!string.IsNullOrEmpty(keyword) && keyword != "🔍 Nhập tên hoặc mã học viên...")
+            foreach (DataRow row in dt.Rows)
             {
-                dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%'", keyword);
+                string maHV = row["MaHV"].ToString();
+                decimal tongNo = TuitionDAO.Instance.GetTongNo(maHV);
+                decimal daDong = TuitionDAO.Instance.GetDaDong(maHV);
+                decimal conNo = tongNo - daDong;
+                row["TrangThaiHocPhi"] = conNo > 0 ? "Còn nợ" : "Hoàn thành";
             }
 
-            dgvSearchResult.DataSource = dt;
+            if (!string.IsNullOrEmpty(keyword) && keyword != "🔍 Nhập tên hoặc mã học viên...")
+                dt.DefaultView.RowFilter = $"MaHV LIKE '%{keyword}%' OR HoTen LIKE '%{keyword}%'";
 
-            // Config cột
+            dgvSearchResult.DataSource = dt;
             SafeSetHeader(dgvSearchResult, "MaHV", "Mã HV");
             SafeSetHeader(dgvSearchResult, "HoTen", "Họ Tên");
-            SafeSetHeader(dgvSearchResult, "SoDienThoai", "SĐT");
+            SafeSetHeader(dgvSearchResult, "TrangThaiHocPhi", "Học Phí");
 
-            string[] colsToHide = { "DiaChi", "NgaySinh", "Email", "NgayGiaNhap", "MaLop", "MaKyNang" };
+            string[] colsToHide = { "DiaChi", "NgaySinh", "Email", "NgayGiaNhap", "MaLop", "MaKyNang", "SoDienThoai" };
             foreach (string col in colsToHide) SafeSetVisible(dgvSearchResult, col, false);
 
-            if (dgvSearchResult.Columns.Contains("MaHV")) { dgvSearchResult.Columns["MaHV"].AutoSizeMode = DataGridViewAutoSizeColumnMode.None; dgvSearchResult.Columns["MaHV"].Width = 80; }
+            if (dgvSearchResult.Columns.Contains("MaHV")) dgvSearchResult.Columns["MaHV"].Width = 80;
+            if (dgvSearchResult.Columns.Contains("TrangThaiHocPhi")) dgvSearchResult.Columns["TrangThaiHocPhi"].Width = 110;
+            ColorizeHocPhiColumn();
         }
 
-        private void Logic_SearchHV(object sender, EventArgs e)
-        {
-            LoadSearchData(txbSearch.Text);
-        }
+        private void Logic_SearchHV(object sender, EventArgs e) { LoadSearchData(txbSearch.Text); }
 
         private void Logic_ChonHV(object sender, DataGridViewCellEventArgs e)
         {
@@ -193,85 +150,268 @@ namespace QuanLyTrungTam
                 currentMaHV = row.Cells["MaHV"].Value.ToString();
                 string tenHV = row.Cells["HoTen"].Value.ToString();
 
-                // Load Lớp
                 DataTable dtLop = TuitionDAO.Instance.GetListDangKy(currentMaHV);
                 dgvLopHoc.DataSource = dtLop;
 
                 SafeSetHeader(dgvLopHoc, "TenKyNang", "Môn Học");
                 SafeSetHeader(dgvLopHoc, "TenLop", "Lớp");
                 SafeSetHeader(dgvLopHoc, "HocPhiLop", "Học Phí");
-                if (dgvLopHoc.Columns.Contains("HocPhiLop"))
-                    dgvLopHoc.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
+                if (dgvLopHoc.Columns.Contains("HocPhiLop")) dgvLopHoc.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
 
                 SafeSetVisible(dgvLopHoc, "NgayDangKy", false);
-
-                // Load Tài Chính
                 UpdateFinanceInfo(tenHV);
             }
         }
 
+        // --- HÀM CẬP NHẬT TÀI CHÍNH (ĐÃ QUAY VỀ KIỂU CŨ GỌN GÀNG) ---
         void UpdateFinanceInfo(string tenHV)
         {
             decimal tongNo = TuitionDAO.Instance.GetTongNo(currentMaHV);
-            decimal daDong = TuitionDAO.Instance.GetDaDong(currentMaHV);
+
+            // Query trực tiếp để lấy tổng tiền đã đóng (Đảm bảo cập nhật ngay)
+            string qSum = "SELECT SUM(SoTienDong) FROM ThanhToan WHERE MaHV = @ma";
+            object result = DataProvider.Instance.ExecuteScalar(qSum, new object[] { currentMaHV });
+            decimal daDong = (result == DBNull.Value || result == null) ? 0 : Convert.ToDecimal(result);
+
             decimal conNo = tongNo - daDong;
 
-            lblTaiChinh.Text = $"Học Viên: {tenHV.ToUpper()}\n\n" +
-                               $"Tổng Học Phí: {tongNo:N0} đ\n" +
-                               $"Đã Đóng:      {daDong:N0} đ\n" +
-                               $"--------------------------\n" +
-                               $"CÒN NỢ:       {conNo:N0} VNĐ";
+            // Hiển thị gọn gàng như cũ
+            string info = $"Học Viên: {tenHV.ToUpper()}\n\n" +
+                          $"Tổng Học Phí: {tongNo:N0} VNĐ\n" +
+                          $"--------------------------\n" +
+                          (daDong > 0 ? $"Đã Đóng:      {daDong:N0} VNĐ\n" : "(Chưa đóng khoản nào)\n") +
+                          $"--------------------------\n" +
+                          $"CÒN NỢ:       {conNo:N0} VNĐ";
 
+            lblTaiChinh.Text = info;
             lblTaiChinh.ForeColor = conNo > 0 ? Color.Red : Color.Green;
-
-            txbDongTien.Clear();
-            txbDongTien.Focus();
         }
 
-        private void Logic_ThanhToanTrucTiep(object sender, EventArgs e)
+        private void BtnLapHoaDon_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên!"); return; }
+            if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
 
-            if (decimal.TryParse(txbDongTien.Text.Replace(",", ""), out decimal soTien) && soTien > 0)
+            // Tính toán lại
+            decimal tongNo = TuitionDAO.Instance.GetTongNo(currentMaHV);
+            string qSum = "SELECT SUM(SoTienDong) FROM ThanhToan WHERE MaHV = @ma";
+            object result = DataProvider.Instance.ExecuteScalar(qSum, new object[] { currentMaHV });
+            decimal daDong = (result == DBNull.Value || result == null) ? 0 : Convert.ToDecimal(result);
+            decimal conNo = tongNo - daDong;
+
+            if (conNo <= 0) { MessageBox.Show("Học viên này đã hết nợ!"); return; }
+
+            string tenHV = dgvSearchResult.CurrentRow.Cells["HoTen"].Value.ToString();
+
+            // Mở Dialog
+            FrmThanhToanDialog frmPay = new FrmThanhToanDialog(currentMaHV, tenHV, conNo);
+
+            if (frmPay.ShowDialog() == DialogResult.OK)
             {
-                if (MessageBox.Show($"Xác nhận thu {soTien:N0} đ?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                decimal tienThu = frmPay.FinalAmount;
+                string hinhThuc = frmPay.FinalMethod;
+
+                if (TuitionDAO.Instance.InsertThanhToan(currentMaHV, tienThu, hinhThuc))
                 {
-                    if (TuitionDAO.Instance.InsertThanhToan(currentMaHV, soTien, "Thu tại quầy"))
-                    {
-                        MessageBox.Show("✅ Thu tiền thành công!");
-                        UpdateFinanceInfo(dgvSearchResult.CurrentRow.Cells["HoTen"].Value.ToString());
-                    }
+                    ThucHienInHoaDon(currentMaHV, tenHV, tienThu, hinhThuc);
+                    MessageBox.Show("✅ Giao dịch thành công!");
+                    UpdateFinanceInfo(tenHV);
+                    LoadSearchData(txbSearch.Text); // Refresh lưới bên trái
+                }
+                else MessageBox.Show("Lỗi lưu dữ liệu!");
+            }
+        }
+
+        // --- IN ẤN ---
+        private void ThucHienInHoaDon(string maHV, string tenHV, decimal soTien, string hinhThuc)
+        {
+            _printTenHV = tenHV; _printSoTien = $"{soTien:N0} VNĐ"; _printHinhThuc = hinhThuc;
+            PrintDocument pd = new PrintDocument();
+            pd.PrintPage += VeHoaDon;
+            PrintPreviewDialog dlg = new PrintPreviewDialog { Document = pd, Width = 800, Height = 600 };
+            dlg.StartPosition = FormStartPosition.CenterScreen;
+            dlg.ShowDialog();
+        }
+
+        private void VeHoaDon(object sender, PrintPageEventArgs e)
+        {
+            Graphics g = e.Graphics; float w = e.PageBounds.Width; float y = 50;
+            StringFormat center = new StringFormat { Alignment = StringAlignment.Center };
+
+            g.DrawString("TRUNG TÂM ĐÀO TẠO", new Font("Arial", 22, FontStyle.Bold), Brushes.Blue, w / 2, y, center); y += 50;
+            g.DrawString("BIÊN LAI THU TIỀN", new Font("Arial", 18, FontStyle.Bold), Brushes.Red, w / 2, y, center); y += 40;
+            g.DrawString($"(Hình thức: {_printHinhThuc})", new Font("Arial", 11, FontStyle.Italic), Brushes.Black, w / 2, y, center); y += 50;
+
+            float x = 100;
+            g.DrawString($"Mã HV:   {currentMaHV}", new Font("Arial", 12), Brushes.Black, x, y); y += 35;
+            g.DrawString($"Họ Tên:  {_printTenHV}", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, x, y); y += 35;
+            g.DrawString($"Số Tiền: {_printSoTien}", new Font("Arial", 16, FontStyle.Bold), Brushes.Red, x, y); y += 45;
+            g.DrawString($"Ngày:    {DateTime.Now:dd/MM/yyyy HH:mm}", new Font("Arial", 12), Brushes.Gray, x, y);
+
+            float rightX = w - 200;
+            y += 50;
+            g.DrawString("Người nộp tiền", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, x + 20, y);
+            g.DrawString("Người thu tiền", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, rightX, y);
+
+            y += 30;
+            g.DrawString("(Ký, họ tên)", new Font("Arial", 10, FontStyle.Italic), Brushes.Gray, x + 30, y);
+            g.DrawString("(Ký, đóng dấu)", new Font("Arial", 10, FontStyle.Italic), Brushes.Gray, rightX + 10, y);
+
+            y += 40;
+            // Bên thu tiền ký tên KHANG
+            Font fKhang = new Font("Mistral", 20, FontStyle.Bold);
+            g.DrawString("Khang", fKhang, Brushes.Black, rightX + 20, y);
+
+            y += 40;
+            g.DrawString("Trần Minh Khang", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, rightX - 20, y);
+        }
+
+        // Helpers
+        private void SafeSetHeader(DataGridView dgv, string c, string t) { if (dgv.Columns.Contains(c)) dgv.Columns[c].HeaderText = t; }
+        private void SafeSetVisible(DataGridView dgv, string c, bool v) { if (dgv.Columns.Contains(c)) dgv.Columns[c].Visible = v; }
+        public void AutoSearch(string ma) { txbSearch.Text = ma; LoadSearchData(ma); }
+        private void SetPlaceholder(TextBox t, string h)
+        {
+            t.Text = h; t.ForeColor = Color.Gray;
+            t.Enter += (s, e) => { if (t.Text == h) { t.Text = ""; t.ForeColor = Color.Black; } };
+            t.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(t.Text)) { t.Text = h; t.ForeColor = Color.Gray; } };
+        }
+        private void ColorizeHocPhiColumn()
+        {
+            foreach (DataGridViewRow r in dgvSearchResult.Rows)
+            {
+                if (r.Cells["TrangThaiHocPhi"].Value?.ToString() == "Còn nợ") r.Cells["TrangThaiHocPhi"].Style.ForeColor = Color.Red;
+                else r.Cells["TrangThaiHocPhi"].Style.ForeColor = Color.Green;
+            }
+        }
+    }
+
+    // =========================================================================
+    // FORM DIALOG THANH TOÁN (ĐÃ XÓA LỊCH SỬ - CHỈ CÒN NHẬP TIỀN & QR)
+    // =========================================================================
+    public class FrmThanhToanDialog : Form
+    {
+        public decimal FinalAmount { get; private set; }
+        public string FinalMethod { get; private set; }
+
+        private TextBox txbTien;
+        private RadioButton rdoTienMat, rdoQR;
+        private CheckBox chkXacNhan;
+        private PictureBox picQR;
+        private Label lblHuongDan;
+        private string _maHV, _tenHV;
+        private decimal _noHienTai;
+
+        public FrmThanhToanDialog(string ma, string ten, decimal no)
+        {
+            _maHV = ma; _tenHV = ten; _noHienTai = no;
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.Text = "HÓA ĐƠN & THANH TOÁN";
+            this.Size = new Size(550, 650); // Thu nhỏ lại vì đã xóa bảng lịch sử
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.BackColor = Color.White;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false; this.MinimizeBox = false;
+
+            // 1. INFO TOP
+            Label lblTitle = new Label { Text = "THÔNG TIN THANH TOÁN", Dock = DockStyle.Top, Height = 40, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.Navy };
+            Panel pnlInfo = new Panel { Dock = DockStyle.Top, Height = 80, Padding = new Padding(20) };
+            Label lblInfo = new Label { Text = $"Học viên: {_tenHV} ({_maHV})\nSố tiền nợ: {_noHienTai:N0} VNĐ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 11), ForeColor = Color.Red };
+            pnlInfo.Controls.Add(lblInfo);
+
+            // 2. METHOD
+            GroupBox grpMethod = new GroupBox { Text = "Chọn phương thức", Dock = DockStyle.Top, Height = 70, Padding = new Padding(10), Font = new Font("Segoe UI", 10) };
+            rdoTienMat = new RadioButton { Text = "💵 Tiền Mặt", Location = new Point(50, 30), AutoSize = true, Checked = true };
+            rdoQR = new RadioButton { Text = "🏦 Chuyển Khoản (QR)", Location = new Point(250, 30), AutoSize = true };
+            grpMethod.Controls.AddRange(new Control[] { rdoTienMat, rdoQR });
+            rdoTienMat.CheckedChanged += (s, e) => ToggleMode();
+            rdoQR.CheckedChanged += (s, e) => ToggleMode();
+
+            // 3. INPUT
+            Panel pnlInput = new Panel { Dock = DockStyle.Top, Height = 60 };
+            Label lblNhap = new Label { Text = "Số tiền thu:", Location = new Point(30, 20), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            txbTien = new TextBox { Text = _noHienTai.ToString("N0"), Location = new Point(130, 18), Width = 200, Font = new Font("Segoe UI", 11, FontStyle.Bold), TextAlign = HorizontalAlignment.Right, ForeColor = Color.DarkRed };
+            pnlInput.Controls.AddRange(new Control[] { lblNhap, txbTien });
+            txbTien.TextChanged += (s, e) => { if (rdoQR.Checked) LoadQR(); };
+
+            // 4. QR (Absolute positioning ở giữa)
+            picQR = new PictureBox { Size = new Size(180, 180), Location = new Point(180, 260), SizeMode = PictureBoxSizeMode.Zoom, BorderStyle = BorderStyle.FixedSingle, Visible = false };
+            lblHuongDan = new Label { Text = "Đang tải mã QR...", Location = new Point(0, 450), Width = 550, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9, FontStyle.Italic), Visible = false };
+
+            // 5. FOOTER (CHECKBOX & BUTTON)
+            Panel pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 100, BackColor = Color.WhiteSmoke };
+
+            chkXacNhan = new CheckBox
+            {
+                Text = "✅ Xác nhận đã nhận đủ tiền từ học viên",
+                Location = new Point(30, 15),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                ForeColor = Color.Red,
+                Cursor = Cursors.Hand
+            };
+
+            Button btnConfirm = new Button
+            {
+                Text = "🖨️ XÁC NHẬN IN PHIẾU",
+                Location = new Point(100, 50),
+                Size = new Size(350, 40),
+                BackColor = Color.Navy,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnConfirm.Click += BtnConfirm_Click;
+
+            pnlFooter.Controls.Add(chkXacNhan);
+            pnlFooter.Controls.Add(btnConfirm);
+
+            this.Controls.Add(pnlFooter);
+            this.Controls.AddRange(new Control[] { lblHuongDan, picQR, pnlInput, grpMethod, pnlInfo, lblTitle });
+        }
+
+        private void ToggleMode()
+        {
+            if (rdoQR.Checked) { picQR.Visible = true; lblHuongDan.Visible = true; LoadQR(); }
+            else { picQR.Visible = false; lblHuongDan.Visible = false; }
+        }
+
+        private void LoadQR()
+        {
+            try
+            {
+                string s = txbTien.Text.Replace(",", "").Replace(".", "").Trim();
+                if (decimal.TryParse(s, out decimal tien) && tien > 0)
+                {
+                    string url = $"https://img.vietqr.io/image/MB-0705840113-compact.png?amount={tien}&addInfo={_maHV}";
+                    picQR.LoadAsync(url);
+                    lblHuongDan.Text = $"Quét mã để chuyển: {tien:N0} VNĐ";
                 }
             }
-            else MessageBox.Show("Số tiền không hợp lệ!");
+            catch { }
         }
-        public void AutoSearch(string maHV)
+
+        private void BtnConfirm_Click(object sender, EventArgs e)
         {
-            // Gán mã HV vào ô tìm kiếm
-            txbSearch.Text = maHV;
-            txbSearch.ForeColor = Color.Black; // Đổi màu chữ nếu đang là placeholder
-
-            // Gọi lại logic tìm kiếm có sẵn
-            // Lưu ý: Logic_SearchHV gọi LoadSearchData
-            LoadSearchData(maHV);
-
-            // Tự động chọn dòng đầu tiên nếu tìm thấy
-            if (dgvSearchResult.Rows.Count > 0)
+            if (!chkXacNhan.Checked)
             {
-                dgvSearchResult.Rows[0].Selected = true;
-                // Gọi sự kiện click để load chi tiết bên phải
-                Logic_ChonHV(dgvSearchResult, new DataGridViewCellEventArgs(0, 0));
+                MessageBox.Show("Vui lòng tick vào ô 'Xác nhận đã nhận đủ tiền' trước khi in phiếu!", "Chưa xác nhận", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
-        }
 
-        // --- HELPERS ---
-        private void SafeSetHeader(DataGridView dgv, string colName, string text) { if (dgv.Columns.Contains(colName)) dgv.Columns[colName].HeaderText = text; }
-        private void SafeSetVisible(DataGridView dgv, string colName, bool vis) { if (dgv.Columns.Contains(colName)) dgv.Columns[colName].Visible = vis; }
-        private void SetPlaceholder(TextBox txt, string holder)
-        {
-            txt.Text = holder; txt.ForeColor = Color.Gray;
-            txt.Enter += (s, e) => { if (txt.Text == holder) { txt.Text = ""; txt.ForeColor = Color.Black; } };
-            txt.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txt.Text)) { txt.Text = holder; txt.ForeColor = Color.Gray; } };
+            string s = txbTien.Text.Replace(",", "").Replace(".", "").Trim();
+            if (!decimal.TryParse(s, out decimal tien) || tien <= 0) { MessageBox.Show("Số tiền không hợp lệ!"); return; }
+            if (tien > _noHienTai) { MessageBox.Show("Thu quá số nợ!"); return; }
+
+            FinalAmount = tien;
+            FinalMethod = rdoTienMat.Checked ? "Tiền mặt" : "Chuyển khoản QR";
+
+            this.DialogResult = DialogResult.OK;
+            this.Close();
         }
     }
 }

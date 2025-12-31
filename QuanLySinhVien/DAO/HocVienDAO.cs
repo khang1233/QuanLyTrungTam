@@ -1,6 +1,7 @@
 ﻿using QuanLyTrungTam.DAO;
 using System;
 using System.Data;
+
 namespace QuanLyTrungTam.DAO
 {
     public class HocVienDAO
@@ -10,135 +11,98 @@ namespace QuanLyTrungTam.DAO
         {
             get { if (instance == null) instance = new HocVienDAO(); return instance; }
         }
+
         private HocVienDAO() { }
-        // --- BỔ SUNG VÀO HocVienDAO.cs ---
 
-        // 1. Thêm Học Viên
-        // File: DAO/HocVienDAO.cs
-
-        public bool InsertHocVien(string maHV, string hoTen, DateTime ngaySinh, string sdt, string email, string diaChi)
+        // =================================================================
+        // [QUAN TRỌNG] HÀM FIX LỖI TRẠNG THÁI (MỚI THÊM)
+        // =================================================================
+        public bool CapNhatTrangThaiHocVien(string maHV, string trangThaiMoi)
         {
-            // 1. Thêm thông tin vào bảng HocVien trước
-            string queryHV = string.Format("INSERT INTO HocVien (MaHV, HoTen, NgaySinh, SoDienThoai, Email, DiaChi, NgayGiaNhap) " +
-                                           "VALUES ('{0}', N'{1}', '{2}', '{3}', '{4}', N'{5}', GETDATE())",
-                                           maHV, hoTen, ngaySinh.ToString("yyyy-MM-dd"), sdt, email, diaChi);
+            // Dùng string.Format để điền trực tiếp giá trị vào câu lệnh
+            // Lưu ý: N'...' để hỗ trợ tiếng Việt
+            string query = string.Format("UPDATE HocVien SET TrangThai = N'{0}' WHERE MaHV = '{1}'", trangThaiMoi, maHV);
 
-            int resultHV = DataProvider.Instance.ExecuteNonQuery(queryHV);
+            // Gọi hàm thực thi (không cần truyền mảng object nữa)
+            int result = DataProvider.Instance.ExecuteNonQuery(query);
 
-            // 2. Nếu thêm HV thành công -> Tự động sinh Tài khoản
-            if (resultHV > 0)
-            {
-                try
-                {
-                    // Mặc định: User = Mã HV, Pass = 123, Quyen = HocVien
-                    string queryTK = string.Format("INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Quyen, MaNguoiDung, IsGoogleAccount) " +
-                                                   "VALUES ('{0}', '123', 'HocVien', '{0}', 0)", maHV);
-                    DataProvider.Instance.ExecuteNonQuery(queryTK);
-                }
-                catch
-                {
-                    // Nếu lỗi tạo TK (ví dụ trùng), có thể xử lý log hoặc bỏ qua tùy nghiệp vụ
-                }
-                return true;
-            }
-            return false;
-        }
-        // File: DAO/HocVienDAO.cs
-        public bool UpdateEmailHocVien(string maHV, string email)
-        {
-            // Kiểm tra email đã có ai dùng chưa
-            string check = "SELECT COUNT(*) FROM HocVien WHERE Email = '" + email + "' AND MaHV != '" + maHV + "'";
-            int count = (int)DataProvider.Instance.ExecuteScalar(check);
-            if (count > 0) return false; // Email đã bị người khác dùng
-
-            // Cập nhật Email vào hồ sơ
-            string query = string.Format("UPDATE HocVien SET Email = '{0}' WHERE MaHV = '{1}'", email, maHV);
-            return DataProvider.Instance.ExecuteNonQuery(query) > 0;
-        }
-        // 2. Sửa Học Viên
-        public bool UpdateHocVien(string maHV, string hoTen, DateTime ngaySinh, string sdt, string email, string diaChi)
-        {
-            string query = string.Format("UPDATE HocVien SET HoTen = N'{1}', NgaySinh = '{2}', SoDienThoai = '{3}', Email = '{4}', DiaChi = N'{5}' " +
-                                         "WHERE MaHV = '{0}'",
-                                         maHV, hoTen, ngaySinh.ToString("yyyy-MM-dd"), sdt, email, diaChi);
-            return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            return result > 0;
         }
 
-        // 3. Xóa Học Viên
-        // Trong file: QuanLyTrungTam/DAO/HocVienDAO.cs
+        // =================================================================
+        // CÁC HÀM CƠ BẢN KHÁC (ĐÃ DỌN DẸP)
+        // =================================================================
 
-        public bool DeleteHocVien(string maHV)
-        {
-            try
-            {
-                // BƯỚC 1: Xóa dữ liệu liên quan ở bảng ThanhToan (Tiền đã đóng)
-                string queryThanhToan = string.Format("DELETE FROM ThanhToan WHERE MaHV = '{0}'", maHV);
-                DataProvider.Instance.ExecuteNonQuery(queryThanhToan);
-
-                // BƯỚC 2: Xóa dữ liệu liên quan ở bảng DangKy (Các lớp đang học)
-                string queryDangKy = string.Format("DELETE FROM DangKy WHERE MaHV = '{0}'", maHV);
-                DataProvider.Instance.ExecuteNonQuery(queryDangKy);
-
-                // BƯỚC 3: Xóa Tài Khoản đăng nhập
-                string queryTaiKhoan = string.Format("DELETE FROM TaiKhoan WHERE MaNguoiDung = '{0}'", maHV);
-                DataProvider.Instance.ExecuteNonQuery(queryTaiKhoan);
-
-                // BƯỚC 4: Cuối cùng mới xóa Học Viên
-                string queryHocVien = string.Format("DELETE FROM HocVien WHERE MaHV = '{0}'", maHV);
-                int result = DataProvider.Instance.ExecuteNonQuery(queryHocVien);
-
-                return result > 0;
-            }
-            catch (Exception ex)
-            {
-                // Ghi log lỗi hoặc thông báo (nếu cần)
-                return false;
-            }
-        }
-        // File: DAO/HocVienDAO.cs
-        public DataRow GetInfoHocVien(string maHV)
-        {
-            string query = "SELECT * FROM HocVien WHERE MaHV = '" + maHV + "'";
-            DataTable data = DataProvider.Instance.ExecuteQuery(query);
-            if (data.Rows.Count > 0)
-            {
-                return data.Rows[0];
-            }
-            return null;
-        }
         public DataTable GetListHocVien()
         {
             return DataProvider.Instance.ExecuteQuery("SELECT * FROM HocVien");
         }
-        // --- THÊM HÀM NÀY VÀO CUỐI CLASS ---
+
+        public DataRow GetInfoHocVien(string maHV)
+        {
+            string query = "SELECT * FROM HocVien WHERE MaHV = '" + maHV + "'";
+            DataTable data = DataProvider.Instance.ExecuteQuery(query);
+            return data.Rows.Count > 0 ? data.Rows[0] : null;
+        }
+
         public string GetNewMaHV()
         {
-            // 1. Lấy mã HV cuối cùng trong bảng (Sắp xếp giảm dần để lấy số lớn nhất)
             string query = "SELECT TOP 1 MaHV FROM HocVien ORDER BY MaHV DESC";
             object result = DataProvider.Instance.ExecuteScalar(query);
+            if (result == null || result == DBNull.Value) return "HV001";
 
-            // 2. Xử lý logic sinh mã
-            if (result == null || result == DBNull.Value)
+            string lastMa = result.ToString();
+            // Giả sử mã dạng HV001, lấy số từ vị trí index 2
+            int nextID = int.Parse(lastMa.Substring(2)) + 1;
+            return "HV" + nextID.ToString("D3");
+        }
+
+        public bool InsertHocVien(string ma, string ten, DateTime ngaySinh, string sdt, string email, string diaChi, string trangThai)
+        {
+            string query = "INSERT INTO HocVien (MaHV, HoTen, NgaySinh, SDT, Email, DiaChi, TrangThai) " +
+                           "VALUES ( @ma , @ten , @ns , @sdt , @mail , @dc , @tt )";
+            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { ma, ten, ngaySinh, sdt, email, diaChi, trangThai }) > 0;
+        }
+
+        public bool UpdateHocVien(string ma, string ten, DateTime ngaySinh, string sdt, string email, string diaChi, string trangThai)
+        {
+            string query = "UPDATE HocVien SET HoTen = @ten , NgaySinh = @ns , SDT = @sdt , " +
+                           "Email = @mail , DiaChi = @dc , TrangThai = @tt WHERE MaHV = @ma ";
+            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { ten, ngaySinh, sdt, email, diaChi, trangThai, ma }) > 0;
+        }
+
+        public bool DeleteHocVien(string maHV)
+        {
+            // Gọi Stored Procedure xóa (nếu bạn đã tạo SP này trong SQL)
+            // Nếu chưa có SP, bạn có thể đổi thành: "DELETE FROM HocVien WHERE MaHV = @ma" (nhưng coi chừng ràng buộc khóa ngoại)
+            string query = "EXEC USP_XoaHocVien @MaHV";
+            object result = DataProvider.Instance.ExecuteScalar(query, new object[] { maHV });
+
+            if (result != null && int.TryParse(result.ToString(), out int res))
             {
-                // Nếu bảng chưa có ai, trả về mã đầu tiên
-                return "HV001";
+                return res == 1;
             }
-            else
-            {
-                string lastMa = result.ToString(); // Ví dụ: "HV009"
+            return false;
+        }
 
-                // Cắt lấy phần số (bỏ 2 ký tự đầu là "HV")
-                string phanSo = lastMa.Substring(2);
+        public bool UpdateEmailHocVien(string maHV, string email)
+        {
+            string check = "SELECT COUNT(*) FROM HocVien WHERE Email = '" + email + "' AND MaHV != '" + maHV + "'";
+            int count = (int)DataProvider.Instance.ExecuteScalar(check);
+            if (count > 0) return false;
 
-                int nextID = 0;
-                if (int.TryParse(phanSo, out nextID))
-                {
-                    nextID++; // Tăng lên 1. Ví dụ: 9 -> 10
-                }
+            string query = string.Format("UPDATE HocVien SET Email = '{0}' WHERE MaHV = '{1}'", email, maHV);
+            return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+        }
 
-                // Trả về format "HV" + 3 chữ số (ví dụ: HV010)
-                return "HV" + nextID.ToString("D3");
-            }
+        public DataTable GetLearningHistory(string maHV)
+        {
+            string query = "SELECT k.TenKyNang, l.TenLop, d.NgayDangKy, l.TrangThai as TinhTrangLop " +
+                           "FROM DangKy d " +
+                           "JOIN LopHoc l ON d.MaLop = l.MaLop " +
+                           "JOIN KyNang k ON l.MaKyNang = k.MaKyNang " +
+                           "WHERE d.MaHV = '" + maHV + "'";
+            return DataProvider.Instance.ExecuteQuery(query);
         }
     }
 }

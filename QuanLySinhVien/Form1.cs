@@ -1,216 +1,313 @@
 ﻿using QuanLyTrungTam.DAO;
-using QuanLyTrungTam.DTO; // Bắt buộc để dùng Account
-using QuanLyTrungTam.Utilities; // Bắt buộc để dùng AppSession
+using QuanLyTrungTam.DTO;
+using QuanLyTrungTam.Utilities;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace QuanLyTrungTam
 {
     public partial class Form1 : Form
     {
+        // ===== CONTROLS =====
+        private TextBox txtUser, txtPass;
+        private RadioButton rdoHocVien, rdoNhanSu, rdoAdmin;
+        private Button btnLogin, btnGoogle;
+
+        // ===== COLORS =====
+        private readonly Color colorPrimary = ColorTranslator.FromHtml("#009688"); // Xanh Teal
+        private readonly Color colorSecondary = ColorTranslator.FromHtml("#2c3e50"); // Xanh Đen
+
         public Form1()
         {
             InitializeComponent();
-            TaoNutGoogle();
+            BuildUI();
         }
 
-        // Nút Thoát
-        private void btnClose_Click(object sender, EventArgs e)
+        // ====================================================================================
+        // 1. DỰNG GIAO DIỆN
+        // ====================================================================================
+        private void BuildUI()
         {
-            if (MessageBox.Show("Bạn có thật sự muốn thoát chương trình?",
-                "Thông báo", MessageBoxButtons.OKCancel) == DialogResult.OK)
+            SuspendLayout();
+
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Size = new Size(1000, 600);
+            this.BackColor = Color.White;
+            this.Controls.Clear();
+
+            // 1. THANH KÉO (DRAG BAR) - CHỨA LUÔN NÚT X
+            Panel drag = new Panel { Dock = DockStyle.Top, Height = 40, BackColor = Color.Transparent, Padding = new Padding(0, 0, 10, 0) };
+            drag.MouseDown += ReleaseCapture_MouseDown;
+            this.Controls.Add(drag);
+
+            // --- TẠO NÚT X (CLOSE) ---
+            Label lblClose = new Label
             {
-                Application.Exit();
-            }
+                Text = "✕",
+                Font = new Font("Arial", 18, FontStyle.Bold),
+                ForeColor = Color.DimGray,
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            lblClose.Click += (s, e) => Application.Exit();
+            lblClose.MouseEnter += (s, e) => lblClose.ForeColor = Color.Red;
+            lblClose.MouseLeave += (s, e) => lblClose.ForeColor = Color.DimGray;
+            drag.Controls.Add(lblClose);
+
+            // 2. CHIA CỘT (TABLE LAYOUT)
+            TableLayoutPanel main = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1
+            };
+            main.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F)); // Trái 45%
+            main.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F)); // Phải 55%
+
+            this.Controls.Add(main);
+            main.SendToBack();
+
+            // 3. THÊM NỘI DUNG VÀO 2 CỘT
+            main.Controls.Add(BuildLeftPanel(), 0, 0);  // Cột trái
+            main.Controls.Add(BuildRightPanel(), 1, 0); // Cột phải
+
+            ResumeLayout();
+            this.AcceptButton = btnLogin; // Enter để đăng nhập
         }
 
-        // Nút Đăng nhập
-        private void btnLogin_Click(object sender, EventArgs e)
+        // ====================================================================================
+        // 2. PANEL TRÁI (LOGO & TITLE)
+        // ====================================================================================
+        private Control BuildLeftPanel()
         {
-            string userName = txbUserName.Text;
-            string passWord = txbPassWord.Text;
+            Panel p = new Panel { Dock = DockStyle.Fill, BackColor = colorPrimary };
+            Panel centerContent = new Panel { Size = new Size(350, 300), BackColor = Color.Transparent };
 
-            // 1. Lấy vai trò từ RadioButton
-            string role = "";
-
-            if (rdoAdmin.Checked)
-                role = "Admin";
-            else if (rdoHocSinh.Checked)
-                role = "HocVien";
-
-            // Kiểm tra chọn vai trò
-            if (string.IsNullOrEmpty(role))
+            // Logo Tròn
+            PictureBox logo = new PictureBox { Size = new Size(120, 120), Location = new Point(115, 0) };
+            logo.Paint += (s, e) =>
             {
-                MessageBox.Show("Vui lòng chọn vai trò đăng nhập!",
-                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.FillEllipse(Brushes.White, 0, 0, 119, 119);
+                e.Graphics.DrawString("EDU", new Font("Segoe UI", 24, FontStyle.Bold), new SolidBrush(colorPrimary), 22, 38);
+            };
+
+            // Tiêu đề
+            Label title = new Label
+            {
+                Text = "QUẢN LÝ\nTRUNG TÂM",
+                Font = new Font("Segoe UI", 26, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            title.Location = new Point((350 - title.PreferredWidth) / 2, 140);
+
+            // Slogan
+            Label sub = new Label
+            {
+                Text = "Hệ thống đào tạo kỹ năng\nchuyên nghiệp",
+                Font = new Font("Segoe UI", 12),
+                ForeColor = Color.WhiteSmoke,
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            sub.Location = new Point((350 - sub.PreferredWidth) / 2, title.Bottom + 15);
+
+            centerContent.Controls.AddRange(new Control[] { logo, title, sub });
+            p.Controls.Add(centerContent);
+
+            p.Resize += (s, e) =>
+            {
+                centerContent.Location = new Point((p.Width - centerContent.Width) / 2, (p.Height - centerContent.Height) / 2);
+            };
+
+            return p;
+        }
+
+        // ====================================================================================
+        // 3. PANEL PHẢI (FORM NHẬP LIỆU)
+        // ====================================================================================
+        private Control BuildRightPanel()
+        {
+            Panel p = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+
+            FlowLayoutPanel stack = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(10)
+            };
+
+            Label lblTitle = new Label { Text = "ĐĂNG NHẬP", Font = new Font("Segoe UI", 24, FontStyle.Bold), ForeColor = colorSecondary, AutoSize = true, Margin = new Padding(0, 0, 0, 30) };
+
+            Control boxUser = CreateInput("Tên đăng nhập", false, tb => txtUser = tb);
+            Control boxPass = CreateInput("Mật khẩu", true, tb => txtPass = tb);
+            Control boxRole = CreateRoleBox();
+            Control btnLog = CreateLoginButton();
+            // Control btnGg = CreateGoogleButton(); // Tạm comment nếu chưa có GoogleHelper
+
+            stack.Controls.AddRange(new Control[] { lblTitle, boxUser, boxPass, boxRole, btnLog }); // Thêm btnGg vào đây nếu muốn dùng
+            p.Controls.Add(stack);
+
+            p.Resize += (s, e) =>
+            {
+                stack.Location = new Point((p.Width - stack.Width) / 2, (p.Height - stack.Height) / 2);
+            };
+
+            return p;
+        }
+
+        // ====================================================================================
+        // 4. HELPER COMPONENTS
+        // ====================================================================================
+        private Control CreateInput(string placeholder, bool isPass, Action<TextBox> assign)
+        {
+            Panel p = new Panel { Width = 380, Height = 55, Margin = new Padding(0, 0, 0, 15) };
+            TextBox tb = new TextBox
+            {
+                Text = placeholder,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 12),
+                BorderStyle = BorderStyle.None,
+                Location = new Point(5, 15),
+                Width = 370
+            };
+            Panel line = new Panel { Height = 2, Dock = DockStyle.Bottom, BackColor = Color.LightGray };
+
+            tb.Enter += (s, e) => {
+                if (tb.Text == placeholder) { tb.Text = ""; tb.ForeColor = Color.Black; if (isPass) tb.UseSystemPasswordChar = true; }
+                line.BackColor = colorPrimary;
+            };
+            tb.Leave += (s, e) => {
+                if (string.IsNullOrWhiteSpace(tb.Text)) { tb.UseSystemPasswordChar = false; tb.Text = placeholder; tb.ForeColor = Color.Gray; }
+                line.BackColor = Color.LightGray;
+            };
+
+            assign(tb);
+            p.Controls.Add(tb); p.Controls.Add(line);
+            return p;
+        }
+
+        private Control CreateRoleBox()
+        {
+            FlowLayoutPanel p = new FlowLayoutPanel { Width = 380, Height = 40, Margin = new Padding(0, 10, 0, 25) };
+            rdoHocVien = CreateRadio("Học viên");
+            rdoNhanSu = CreateRadio("Nhân sự");
+            rdoAdmin = CreateRadio("Admin");
+            rdoHocVien.Checked = true;
+            p.Controls.AddRange(new Control[] { rdoHocVien, rdoNhanSu, rdoAdmin });
+            return p;
+        }
+
+        private RadioButton CreateRadio(string text) =>
+            new RadioButton { Text = text, Font = new Font("Segoe UI", 11), AutoSize = true, Margin = new Padding(0, 0, 25, 0), Cursor = Cursors.Hand };
+
+        private Control CreateLoginButton()
+        {
+            btnLogin = new Button
+            {
+                Text = "ĐĂNG NHẬP",
+                Width = 380,
+                Height = 50,
+                BackColor = colorPrimary,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnLogin.FlatAppearance.BorderSize = 0;
+            btnLogin.Click += BtnLogin_Click;
+            return btnLogin;
+        }
+
+        private Control CreateGoogleButton()
+        {
+            btnGoogle = new Button
+            {
+                Text = "G  Đăng nhập bằng Google",
+                Width = 380,
+                Height = 45,
+                BackColor = Color.White,
+                ForeColor = Color.DimGray,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11),
+                Margin = new Padding(0, 15, 0, 0),
+                Cursor = Cursors.Hand
+            };
+            btnGoogle.FlatAppearance.BorderColor = Color.LightGray;
+            // btnGoogle.Click += BtnGoogle_Click;
+            return btnGoogle;
+        }
+
+        // ====================================================================================
+        // 5. LOGIC XỬ LÝ (ĐÃ SỬA LỖI STRING)
+        // ====================================================================================
+        private void BtnLogin_Click(object sender, EventArgs e)
+        {
+            string role = rdoAdmin.Checked ? "Admin" : rdoNhanSu.Checked ? "NhanSu" : "HocVien";
+            string user = txtUser.Text.Trim();
+            string pass = txtPass.Text.Trim();
+
+            if (string.IsNullOrEmpty(user) || user == "Tên đăng nhập" || string.IsNullOrEmpty(pass) || pass == "Mật khẩu")
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Kiểm tra tài khoản và mật khẩu
-            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(passWord))
+            if (AccountDAO.Instance.Login(user, pass, role))
             {
-                MessageBox.Show("Vui lòng nhập đầy đủ tài khoản và mật khẩu!",
-                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+                Account acc = AccountDAO.Instance.GetAccountByUserName(user);
 
-            try
-            {
-                // 2. GỌI HÀM LOGIN
-                if (AccountDAO.Instance.Login(userName, passWord, role))
+                // --- ĐOẠN ĐÃ SỬA LỖI ---
+                // Thay vì kiểm tra (!acc.TrangThai), ta so sánh chuỗi
+                if (acc != null && acc.TrangThai != "Hoạt động")
                 {
-                    // 3. LẤY ĐỐI TƯỢNG ACCOUNT
-                    Account loginAccount = AccountDAO.Instance.GetAccountByUserName(userName);
-
-                    // 4. ✔ FIX QUAN TRỌNG NHẤT
-                    AppSession.CurrentUser = loginAccount;
-
-                    // 5. MỞ FORM MAIN (truyền account luôn)
-                    fMain f = new fMain(loginAccount);
-                    this.Hide();
-                    f.ShowDialog();
-                    this.Show();
+                    MessageBox.Show("Tài khoản đã bị khóa hoặc ngừng hoạt động!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
-                else
-                {
-                    MessageBox.Show("Đăng nhập thất bại!\nCó thể do:\n" +
-                                    "• Sai tên đăng nhập hoặc mật khẩu.\n" +
-                                    "• Bạn đã chọn sai vai trò.",
-                                    "Lỗi đăng nhập",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error);
-                }
+                // -----------------------
+
+                AppSession.CurrentUser = acc;
+                this.Hide();
+                new fMain(acc).ShowDialog();
+                this.Show();
+                txtPass.Text = "";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi hệ thống: " + ex.Message);
-            }
+            else MessageBox.Show("Sai thông tin đăng nhập hoặc vai trò!", "Lỗi Đăng Nhập", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-        // Trong Form1.cs
-        private async void btnGoogleLogin_Click(object sender, EventArgs e)
+
+        /* // Nếu bạn chưa có GoogleHelper thì comment đoạn này lại để tránh lỗi
+        private async void BtnGoogle_Click(object sender, EventArgs e)
         {
             try
             {
-                // 1. Lấy email từ Google (Code GoogleHelper của bạn đã ổn)
                 string email = await GoogleHelper.LoginGoogleAsync();
-
-                if (string.IsNullOrEmpty(email))
+                if (!string.IsNullOrEmpty(email) && AccountDAO.Instance.LoginGoogle(email))
                 {
-                    MessageBox.Show("Đăng nhập Google thất bại hoặc bị hủy.");
-                    return;
-                }
-
-                // 2. Xử lý Logic Database (Login hoặc Register)
-                if (AccountDAO.Instance.LoginGoogle(email))
-                {
-                    // 3. Lấy thông tin account sau khi xử lý xong
-                    Account acc = AccountDAO.Instance.GetAccountByUserName(email);
-
-                    // 4. Lưu Session
-                    QuanLyTrungTam.Utilities.AppSession.CurrentUser = acc;
-
-                    // 5. Chuyển Form
-                    fMain f = new fMain(acc);
-                    this.Hide();
-                    f.ShowDialog();
-                    this.Show();
-                }
-                else
-                {
-                    MessageBox.Show("Lỗi hệ thống khi tạo tài khoản Google.");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi: " + ex.Message);
-            }
-        }
-        // Trong file Form1.cs
-
-        private async void btnGoogle_Click(object sender, EventArgs e)
-        {
-            // Khóa nút để tránh bấm liên tục
-            Button btn = (Button)sender;
-            btn.Enabled = false;
-            btn.Text = "Đang kết nối...";
-
-            try
-            {
-                // 1. Gọi Google lấy Email
-                string email = await GoogleHelper.LoginGoogleAsync();
-
-                if (string.IsNullOrEmpty(email))
-                {
-                    MessageBox.Show("Đăng nhập thất bại. Vui lòng thử lại.");
-                    return;
-                }
-
-                // 2. Xử lý Logic Database (Login hoặc Register)
-                if (AccountDAO.Instance.LoginGoogle(email))
-                {
-                    // 3. Lấy thông tin account để lưu Session
                     Account acc = AccountDAO.Instance.GetAccountByEmail(email);
-                    QuanLyTrungTam.Utilities.AppSession.CurrentUser = acc;
-
-                    // 4. Mở Form Main
-                    fMain f = new fMain(acc);
+                    AppSession.CurrentUser = acc;
                     this.Hide();
-                    f.ShowDialog();
+                    new fMain(acc).ShowDialog();
                     this.Show();
                 }
-                else
-                {
-                    MessageBox.Show("Lỗi hệ thống khi tạo tài khoản mới.");
-                }
+                else MessageBox.Show("Đăng nhập Google thất bại!");
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi: " + ex.Message);
-            }
-            finally
-            {
-                // Mở lại nút
-                btn.Enabled = true;
-                btn.Text = "Đăng nhập Google";
-            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
-        // --- HÀM TỰ ĐỘNG TẠO NÚT GOOGLE (Dán vào Form1.cs) ---
-        private void TaoNutGoogle()
-        {
-            // 1. Khởi tạo nút mới
-            Button btnGoogle = new Button();
-            btnGoogle.Name = "btnGoogleLogin";
-            btnGoogle.Text = "G  Đăng nhập Google ";
-            btnGoogle.Size = new Size(btnLogin.Width, btnLogin.Height); // Lấy kích thước bằng nút Đăng nhập cũ
+        */
 
-            // 2. Căn vị trí: Nằm ngay bên dưới nút Đăng nhập cũ 15px
-            btnGoogle.Location = new Point(btnLogin.Location.X, btnLogin.Location.Y + btnLogin.Height + 15);
-
-            // 3. Trang trí cho đẹp (Giống phong cách Google)
-            btnGoogle.BackColor = Color.White;
-            btnGoogle.ForeColor = Color.DimGray;
-            btnGoogle.FlatStyle = FlatStyle.Flat;
-            btnGoogle.FlatAppearance.BorderColor = Color.Silver;
-            btnGoogle.Font = new Font("Segoe UI", 7, FontStyle.Bold);
-            btnGoogle.Cursor = Cursors.Hand;
-
-            // 4. GẮN SỰ KIỆN CLICK (Kết nối với hàm xử lý bạn đã viết trước đó)
-            btnGoogle.Click += new EventHandler(this.btnGoogle_Click);
-
-            // 5. Thêm nút vào giao diện
-            // (Thêm vào cùng vị trí cha với nút Login để đảm bảo nó hiện đúng chỗ)
-            btnLogin.Parent.Controls.Add(btnGoogle);
-            btnGoogle.BringToFront();
-        }
-        private void groupBoxRole_Enter(object sender, EventArgs e)
-        {
-
-        }
-
-        private void labelAppName_Click(object sender, EventArgs e)
-        {
-
-        }
+        // --- DRAG FORM ---
+        [DllImport("user32.dll")] private static extern void ReleaseCapture();
+        [DllImport("user32.dll")] private static extern void SendMessage(IntPtr hWnd, int msg, int w, int l);
+        private void ReleaseCapture_MouseDown(object s, MouseEventArgs e) { ReleaseCapture(); SendMessage(Handle, 0x112, 0xf012, 0); }
     }
 }

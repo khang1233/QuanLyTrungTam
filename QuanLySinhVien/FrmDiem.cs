@@ -1,0 +1,308 @@
+﻿using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.Utilities;
+using System;
+using System.Data;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace QuanLyTrungTam
+{
+    public partial class FrmDiem : Form
+    {
+        private ComboBox cbLop;
+        private DataGridView dgvDiem;
+        private TextBox txbSearch;
+        private Button btnSave;
+
+        public FrmDiem()
+        {
+            InitializeComponent();
+            SetupUI();
+            LoadClasses();
+        }
+
+        // =============================================
+        // 1. THIẾT KẾ GIAO DIỆN (ĐÃ FIX LỖI HIỂN THỊ)
+        // =============================================
+        private void SetupUI()
+        {
+            this.Controls.Clear();
+            this.Text = "Quản Lý Điểm Số & Xếp Loại";
+            this.Size = new Size(1280, 750);
+            this.BackColor = Color.White;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Font = new Font("Segoe UI", 10F);
+
+            // --- A. PANEL HEADER (Top) ---
+            Panel pnlTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 80, // Giảm chiều cao chút cho gọn
+                BackColor = Color.WhiteSmoke, // Màu xám nhạt để tách biệt header
+                Padding = new Padding(20)
+            };
+            // Đường kẻ dưới header
+            pnlTop.Paint += (s, e) => e.Graphics.DrawLine(Pens.Silver, 0, 79, pnlTop.Width, 79);
+
+            Label lblLop = new Label { Text = "Chọn lớp:", Location = new Point(20, 28), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            cbLop = new ComboBox { Location = new Point(100, 25), Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+            cbLop.SelectedIndexChanged += (s, e) => LoadDiem();
+
+            Label lblSearch = new Label { Text = "Tìm kiếm:", Location = new Point(430, 28), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            txbSearch = new TextBox { Location = new Point(510, 25), Width = 250 };
+            SetPlaceholder(txbSearch, "Mã hoặc tên học viên...");
+
+            btnSave = new Button
+            {
+                Text = "LƯU BẢNG ĐIỂM",
+                Location = new Point(pnlTop.Width - 200, 20), // Neo phải
+                Size = new Size(160, 40),
+                BackColor = Color.FromArgb(0, 150, 136),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            btnSave.Click += BtnSave_Click;
+
+            pnlTop.Controls.AddRange(new Control[] { lblLop, cbLop, lblSearch, txbSearch, btnSave });
+
+            // --- B. DATAGRIDVIEW CONTAINER (Để tạo khoảng hở đẹp mắt) ---
+            Panel pnlGridContainer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(15), // Tạo viền trắng xung quanh bảng
+                BackColor = Color.White
+            };
+
+            dgvDiem = new DataGridView();
+            InitGridStyle(); // Gọi hàm tạo cột và style ngay lập tức
+
+            pnlGridContainer.Controls.Add(dgvDiem);
+
+            // --- QUAN TRỌNG: THỨ TỰ ADD CONTROL ---
+            // Add Grid (Fill) trước, hoặc Add Container chứa Grid
+            this.Controls.Add(pnlGridContainer);
+            // Add Header (Top) sau cùng để nó đè lên phần trên
+            this.Controls.Add(pnlTop);
+        }
+
+        // =============================================
+        // HÀM KHỞI TẠO GRID & CỘT (FIX LỖI MẤT BẢNG)
+        // =============================================
+        private void InitGridStyle()
+        {
+            dgvDiem.Dock = DockStyle.Fill;
+            dgvDiem.BackgroundColor = Color.WhiteSmoke; // Đổi màu nền bảng để thấy rõ vùng bảng
+            dgvDiem.BorderStyle = BorderStyle.Fixed3D;  // Thêm viền để thấy khung
+
+            dgvDiem.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvDiem.AllowUserToAddRows = false;
+            dgvDiem.RowHeadersVisible = false;
+            dgvDiem.ColumnHeadersHeight = 45;
+            dgvDiem.RowTemplate.Height = 40;
+            dgvDiem.EnableHeadersVisualStyles = false;
+            dgvDiem.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvDiem.AutoGenerateColumns = false; // Tắt tự động sinh cột để dùng cột mình tự định nghĩa
+
+            // Style Header
+            dgvDiem.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgvDiem.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvDiem.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgvDiem.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            // Style Cell
+            dgvDiem.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            dgvDiem.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            // --- ĐỊNH NGHĨA CỘT THỦ CÔNG (Đảm bảo bảng luôn hiện Header) ---
+            AddCol("MaHV", "Mã HV", true, 100);
+            AddCol("HoTen", "Họ Tên Học Viên", true, 200);
+            AddCol("Diem15p1", "15 Phút (1)", false, 80);
+            AddCol("Diem15p2", "15 Phút (2)", false, 80);
+            AddCol("DiemGiuaKy", "Giữa Kỳ (x2)", false, 100);
+            AddCol("DiemCuoiKy", "Cuối Kỳ (x3)", false, 100);
+            AddCol("DiemTongKet", "Tổng Kết", true, 100);
+            AddCol("XepLoai", "Xếp Loại", true, 120);
+            AddCol("GhiChu", "Ghi Chú", false, 150);
+
+            // Event tô màu
+            dgvDiem.CellFormatting += DgvDiem_CellFormatting;
+
+            // Event tìm kiếm
+            txbSearch.TextChanged += (s, e) =>
+            {
+                if (dgvDiem.DataSource is DataTable dt)
+                {
+                    string k = txbSearch.Text.Trim();
+                    if (k == "Mã hoặc tên học viên..." || string.IsNullOrEmpty(k)) dt.DefaultView.RowFilter = "";
+                    else dt.DefaultView.RowFilter = $"MaHV LIKE '%{k}%' OR HoTen LIKE '%{k}%'";
+                }
+            };
+        }
+
+        private void AddCol(string dataPropertyName, string headerText, bool readOnly, int width)
+        {
+            DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn();
+            col.DataPropertyName = dataPropertyName; // Tên cột trong Database
+            col.HeaderText = headerText;             // Tên hiển thị
+            col.Name = dataPropertyName;
+            col.ReadOnly = readOnly;
+
+            // Nếu là cột điểm cho phép nhập
+            if (!readOnly)
+            {
+                col.DefaultCellStyle.BackColor = Color.LightYellow; // Tô màu vàng nhạt ô nhập liệu
+                col.DefaultCellStyle.ForeColor = Color.Black;
+            }
+            // Nếu là cột tổng kết
+            if (dataPropertyName == "DiemTongKet")
+            {
+                col.DefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                col.DefaultCellStyle.ForeColor = Color.Blue;
+                col.DefaultCellStyle.Format = "N1";
+            }
+
+            dgvDiem.Columns.Add(col);
+        }
+
+        // =============================================
+        // LOAD DATA
+        // =============================================
+        // File: FrmDiem.cs -> Tìm hàm LoadClasses và sửa thành:
+
+        private void LoadClasses()
+        {
+            DataTable dt;
+
+            if (AppSession.CurrentUser.Quyen.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                dt = DataProvider.Instance.ExecuteQuery("SELECT MaLop, TenLop FROM LopHoc");
+            }
+            else
+            {
+                string maNS = AppSession.CurrentUser.MaNguoiDung;
+                dt = LopHocDAO.Instance.GetLopByNhanSu(maNS);
+            }
+
+            cbLop.DataSource = dt;
+            cbLop.DisplayMember = "TenLop";
+            cbLop.ValueMember = "MaLop";
+        }
+
+        private void LoadDiem()
+        {
+            if (cbLop.SelectedValue == null) return;
+            string maLop = cbLop.SelectedValue.ToString();
+
+            DataTable dt = DiemDAO.Instance.GetBangDiemLop(maLop);
+            // Thêm cột Xếp loại ảo vào DataTable để Grid hiển thị được
+            if (!dt.Columns.Contains("XepLoai")) dt.Columns.Add("XepLoai", typeof(string));
+
+            dgvDiem.DataSource = dt;
+        }
+
+        // =============================================
+        // LOGIC TÔ MÀU XẾP LOẠI
+        // =============================================
+        private void DgvDiem_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (dgvDiem.Columns[e.ColumnIndex].Name == "XepLoai")
+            {
+                var cellVal = dgvDiem.Rows[e.RowIndex].Cells["DiemTongKet"]?.Value;
+                if (cellVal != null && cellVal != DBNull.Value)
+                {
+                    double d = Convert.ToDouble(cellVal);
+                    string xl = ""; Color c = Color.Black;
+
+                    if (d < 3) { xl = "YẾU"; c = Color.Red; }
+                    else if (d < 5) { xl = "TRUNG BÌNH"; c = Color.OrangeRed; }
+                    else if (d < 7) { xl = "KHÁ"; c = Color.Blue; }
+                    else if (d < 8.5) { xl = "GIỎI"; c = Color.Green; }
+                    else { xl = "XUẤT SẮC"; c = Color.DarkGreen; }
+
+                    e.Value = xl;
+                    e.CellStyle.ForeColor = c;
+                    e.CellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                }
+            }
+        }
+
+        // =============================================
+        // LƯU ĐIỂM
+        // =============================================
+        // Thay thế sự kiện BtnSave_Click cũ bằng đoạn này
+        private void BtnSave_Click(object sender, EventArgs e)
+        {
+            if (cbLop.SelectedValue == null) return;
+            string maLop = cbLop.SelectedValue.ToString();
+            int count = 0;
+            string errorMsg = ""; // Biến lưu lỗi nếu có
+
+            foreach (DataGridViewRow r in dgvDiem.Rows)
+            {
+                // Bỏ qua dòng trống hoặc dòng mới
+                if (r.IsNewRow) continue;
+                if (r.Cells["MaHV"].Value == null || string.IsNullOrEmpty(r.Cells["MaHV"].Value.ToString())) continue;
+
+                try
+                {
+                    string maHV = r.Cells["MaHV"].Value.ToString();
+
+                    // Lấy điểm (xử lý null thành 0)
+                    double d1 = GetVal(r.Cells["Diem15p1"].Value);
+                    double d2 = GetVal(r.Cells["Diem15p2"].Value);
+                    double dGK = GetVal(r.Cells["DiemGiuaKy"].Value);
+                    double dCK = GetVal(r.Cells["DiemCuoiKy"].Value);
+                    string ghiChu = r.Cells["GhiChu"].Value?.ToString() ?? "";
+
+                    // Validate điểm
+                    if (d1 < 0 || d1 > 10 || d2 < 0 || d2 > 10 || dGK < 0 || dGK > 10 || dCK < 0 || dCK > 10)
+                    {
+                        MessageBox.Show($"Điểm của {r.Cells["HoTen"].Value} không hợp lệ (0-10)!", "Lỗi nhập liệu");
+                        return;
+                    }
+
+                    // Gọi DAO lưu
+                    if (DiemDAO.Instance.LuuDiem(maHV, maLop, d1, d2, dGK, dCK, ghiChu))
+                    {
+                        count++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Ghi lại lỗi đầu tiên gặp phải để thông báo
+                    if (string.IsNullOrEmpty(errorMsg)) errorMsg = ex.Message;
+                }
+            }
+
+            if (count > 0)
+            {
+                MessageBox.Show($"Đã lưu thành công {count} học viên!", "Thành công");
+                LoadDiem(); // Tải lại để thấy Điểm tổng kết và Xếp loại mới nhất
+            }
+            else
+            {
+                // Nếu không lưu được ai, hiện lỗi ra để biết đường sửa
+                if (!string.IsNullOrEmpty(errorMsg))
+                    MessageBox.Show("Lỗi hệ thống: " + errorMsg, "Thất bại");
+                else
+                    MessageBox.Show("Không có dữ liệu hợp lệ để lưu.", "Thông báo");
+            }
+        }
+
+        // Hàm hỗ trợ lấy giá trị số an toàn
+        private double GetVal(object val)
+        {
+            if (val == null || val == DBNull.Value || string.IsNullOrWhiteSpace(val.ToString())) return 0;
+            if (double.TryParse(val.ToString(), out double res)) return res;
+            return 0;
+        }
+        private void SetPlaceholder(TextBox txt, string holder)
+        {
+            txt.Text = holder; txt.ForeColor = Color.Gray;
+            txt.Enter += (s, e) => { if (txt.Text == holder) { txt.Text = ""; txt.ForeColor = Color.Black; } };
+            txt.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txt.Text)) { txt.Text = holder; txt.ForeColor = Color.Gray; } };
+        }
+    }
+}

@@ -1,95 +1,136 @@
-﻿    using System;
-    using System.Data;
-    using QuanLyTrungTam.DTO;
+﻿using System;
+using System.Data;
+using QuanLyTrungTam.DTO;
 
-    namespace QuanLyTrungTam.DAO
+namespace QuanLyTrungTam.DAO
+{
+    public class DashboardDAO
     {
-        public class DashboardDAO
+        private static DashboardDAO instance;
+        public static DashboardDAO Instance
         {
-            private static DashboardDAO instance;
-            public static DashboardDAO Instance
-            {
-                get { if (instance == null) instance = new DashboardDAO(); return instance; }
-            }
-            private DashboardDAO() { }
+            get { if (instance == null) instance = new DashboardDAO(); return instance; }
+        }
+        private DashboardDAO() { }
 
-            // 1. Tổng doanh thu dự kiến (Tổng tiền đăng ký)
-            public decimal GetTongDoanhThuDuKien()
-            {
-                string query = "SELECT SUM(HocPhiLop) FROM DangKy";
-                return GetDecimalFromQuery(query);
-            }
+        // 1. Đếm Học Viên
+        public int GetSoLuongHocVien()
+        {
+            try { return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM HocVien WHERE TrangThai = N'Đang học'"); } catch { return 0; }
+        }
 
-            // 2. Tổng thực thu (Tiền đã vào túi)
-            public decimal GetTongThucThu()
-            {
-                string query = "SELECT SUM(SoTienDong) FROM ThanhToan";
-                return GetDecimalFromQuery(query);
-            }
+        // 2. Đếm Lớp Học (Theo data mẫu: TrangThai = N'Đang học')
+        public int GetSoLuongLopHoc()
+        {
+            try { return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM LopHoc WHERE TrangThai = N'Đang học'"); } catch { return 0; }
+        }
 
-            // 3. Tổng nợ hiện tại
-            public decimal GetTongNo()
+        // 3. Đếm Môn Đào Tạo (Bảng KyNang, TrangThai = '1')
+        public int GetSoLuongMon()
+        {
+            try
             {
-                return GetTongDoanhThuDuKien() - GetTongThucThu();
+                // Data của bạn lưu TrangThai là '1' cho môn đang mở
+                return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM KyNang WHERE TrangThai = '1'");
             }
+            catch { return 0; }
+        }
 
-            // 4. Số lượng học viên
-            public int GetSoLuongHocVien()
+        // 4. Tính Lợi Nhuận (Thu - Chi)
+        public decimal GetLoiNhuan()
+        {
+            try
             {
-                try
-                {
-                    return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM HocVien");
-                }
-                catch { return 0; }
-            }
+                // Data của bạn LoaiGD có thể là 'Thu' hoặc 'Thu học phí' -> Dùng LIKE N'Thu%'
+                string queryThu = "SELECT SUM(SoTien) FROM GiaoDichTaiChinh WHERE LoaiGD LIKE N'Thu%'";
+                string queryChi = "SELECT SUM(SoTien) FROM GiaoDichTaiChinh WHERE LoaiGD LIKE N'Chi%'";
 
-            // 5. Thống kê doanh thu theo từng Kỹ Năng (Để vẽ biểu đồ)
-            public DataTable GetRevenueBySkill()
-            {
-                string query = @"
-                    SELECT k.TenKyNang, SUM(d.HocPhiLop) as TongTien
-                    FROM KyNang k
-                    JOIN LopHoc l ON k.MaKyNang = l.MaKyNang
-                    JOIN DangKy d ON l.MaLop = d.MaLop
-                    GROUP BY k.TenKyNang";
-                return DataProvider.Instance.ExecuteQuery(query);
-            }
+                object objThu = DataProvider.Instance.ExecuteScalar(queryThu);
+                object objChi = DataProvider.Instance.ExecuteScalar(queryChi);
 
-            // Helper function
-            private decimal GetDecimalFromQuery(string query)
-            {
-                try
-                {
-                    object result = DataProvider.Instance.ExecuteScalar(query);
-                    if (result != null && result != DBNull.Value)
-                        return Convert.ToDecimal(result);
-                    return 0;
-                }
-                catch { return 0; }
-            }
-            public int GetSoLuongLopHoc()
-            {
-                try { return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM LopHoc"); }
-                catch { return 0; }
-            }
+                decimal thu = (objThu == DBNull.Value || objThu == null) ? 0 : Convert.ToDecimal(objThu);
+                decimal chi = (objChi == DBNull.Value || objChi == null) ? 0 : Convert.ToDecimal(objChi);
 
-            // 7. Đếm tổng số môn học (Kỹ năng)
-            public int GetSoLuongMonHoc()
-            {
-                try { return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM KyNang"); }
-                catch { return 0; }
+                return thu - chi;
             }
-            public DataTable GetStudentCountBySkill()
-            {
-                // Chúng ta dùng COUNT(d.MaHV) để đếm số học viên đã đăng ký
-                string query = @"
-            SELECT k.TenKyNang, COUNT(d.MaHV) as SoLuong
-            FROM KyNang k
-            LEFT JOIN LopHoc l ON k.MaKyNang = l.MaKyNang
-            LEFT JOIN DangKy d ON l.MaLop = d.MaLop
-            GROUP BY k.TenKyNang";
+            catch { return 0; }
+        }
 
-                return DataProvider.Instance.ExecuteQuery(query);
+        // 5. Đếm Giáo Viên (Bảng NhanSu, LoaiNS = N'Giáo viên')
+        public int GetSoLuongGiaoVien()
+        {
+            try
+            {
+                return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM NhanSu WHERE LoaiNS = N'Giáo viên'");
             }
+            catch { return 0; }
+        }
+
+        // 6. Đếm Trợ Giảng (Bảng NhanSu, LoaiNS = N'Trợ giảng')
+        public int GetSoLuongTroGiang()
+        {
+            try
+            {
+                return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM NhanSu WHERE LoaiNS = N'Trợ giảng'");
+            }
+            catch { return 0; }
+        }
+
+        // 7. Học viên nợ phí (Logic: Tổng học phí phải đóng - Tổng đã đóng > 0)
+        public int GetSoLuongNoPhi()
+        {
+            string query = @"
+                SELECT COUNT(DISTINCT dk.MaHV)
+                FROM DangKy dk
+                LEFT JOIN (SELECT MaHV, SUM(SoTienDong) as TongDaDong FROM ThanhToan GROUP BY MaHV) tt 
+                ON dk.MaHV = tt.MaHV
+                WHERE (dk.HocPhiLop - ISNULL(tt.TongDaDong, 0)) > 0";
+            try { return (int)DataProvider.Instance.ExecuteScalar(query); } catch { return 0; }
+        }
+
+        // 8. Lớp chưa đủ học viên
+        public int GetSoLopChuaDu()
+        {
+            try { return (int)DataProvider.Instance.ExecuteScalar("SELECT COUNT(*) FROM LopHoc WHERE TrangThai = N'Đang tuyển sinh'"); } catch { return 0; }
+        }
+
+        // 9. Biểu đồ Tài chính (Group theo tháng)
+        public DataTable GetFinanceChartData()
+        {
+            string query = @"
+                SELECT 
+                    FORMAT(NgayGD, 'MM/yyyy') as ThoiGian, 
+                    SUM(CASE WHEN LoaiGD LIKE N'Thu%' THEN SoTien ELSE 0 END) as TongThu,
+                    SUM(CASE WHEN LoaiGD LIKE N'Chi%' THEN SoTien ELSE 0 END) as TongChi
+                FROM GiaoDichTaiChinh 
+                GROUP BY FORMAT(NgayGD, 'MM/yyyy'), YEAR(NgayGD), MONTH(NgayGD)
+                ORDER BY YEAR(NgayGD), MONTH(NgayGD)";
+            try { return DataProvider.Instance.ExecuteQuery(query); } catch { return null; }
+        }
+
+        // 10. Top điểm số lớp học
+        public DataTable GetTopClassScores()
+        {
+            // Join Diem -> LopHoc để lấy tên lớp
+            try
+            {
+                return DataProvider.Instance.ExecuteQuery(@"
+                SELECT TOP 5 l.TenLop, AVG(d.DiemTongKet) as DiemTB 
+                FROM Diem d JOIN LopHoc l ON d.MaLop = l.MaLop 
+                WHERE d.DiemTongKet IS NOT NULL
+                GROUP BY l.TenLop ORDER BY DiemTB DESC");
+            }
+            catch { return null; }
+        }
+
+        // 11. Nhật ký hệ thống (Bảng LichSuDangNhap)
+        public DataTable GetSystemLog()
+        {
+            try
+            {
+                return DataProvider.Instance.ExecuteQuery("SELECT TOP 10 ThoiGian, TenDangNhap, GhiChu FROM LichSuDangNhap ORDER BY ThoiGian DESC");
+            }
+            catch { return null; }
         }
     }
+}

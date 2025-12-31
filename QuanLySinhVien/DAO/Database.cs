@@ -1,12 +1,12 @@
-﻿using System.Configuration;
-using System.Data.SqlClient;
+﻿    using System.Configuration;
+    using System.Data.SqlClient;
 
-public class Database
-{
-    public SqlConnection GetConnection()   // ← đổi protected thành public
+    public class Database
     {
-        string connStr = ConfigurationManager.ConnectionStrings["QLSV"].ConnectionString;
-        return new SqlConnection(connStr);
+        public SqlConnection GetConnection()   // ← đổi protected thành public
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["QLSV"].ConnectionString;
+            return new SqlConnection(connStr);
+        }
     }
-}
 

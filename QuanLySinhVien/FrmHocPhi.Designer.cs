@@ -1,6 +1,6 @@
 ﻿namespace QuanLyTrungTam
 {
-    partial class FrmHocPhi
+    partial class FrmTraCuuHocPhi
     {
         /// <summary>
         /// Required designer variable.
@@ -99,7 +99,7 @@
             this.btnXacNhanDong.TabIndex = 6;
             this.btnXacNhanDong.Text = "Thanh Toán";
             this.btnXacNhanDong.UseVisualStyleBackColor = true;
-            this.btnXacNhanDong.Click += new System.EventHandler(this.btnXacNhanDong_Click);
+//            this.btnXacNhanDong.Click += new System.EventHandler(this.btnXacNhanDong_Click);
             // 
             // FrmHocPhi
             // 
@@ -115,7 +115,7 @@
             this.Controls.Add(this.dgvSinhVien);
             this.Name = "FrmHocPhi";
             this.Text = "Quản Lý Học Phí";
-            this.Load += new System.EventHandler(this.FrmHocPhi_Load_1);
+//            this.Load += new System.EventHandler(this.FrmHocPhi_Load_1);
             ((System.ComponentModel.ISupportInitialize)(this.dgvSinhVien)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

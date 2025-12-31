@@ -1,35 +1,38 @@
-﻿using System;
-using System.Windows.Forms;
-using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.DAO;
 using QuanLyTrungTam.DTO;
+using QuanLyTrungTam.Utilities;
+using System;
+using System.Windows.Forms;
 
 namespace QuanLyTrungTam
 {
     public partial class fChangePassword : Form
     {
-        // Biến để lưu tài khoản đang đăng nhập
         private Account loginAccount;
 
-        // Constructor nhận vào Account (để fMain truyền sang)
+        // Constructor nhận vào Account từ Form cha
         public fChangePassword(Account acc)
         {
             InitializeComponent();
-            this.loginAccount = acc; // Lưu tài khoản lại để dùng
+            this.loginAccount = acc;
+            this.Text = "Đổi Mật Khẩu Cá Nhân";
+            this.StartPosition = FormStartPosition.CenterParent; // Hiện giữa form cha
+        }
+        private void txbPassOld_TextChanged(object sender, EventArgs e)
+        {
+            // Không cần viết gì ở đây cả
         }
 
-        // 1. Sự kiện nút Cập nhật
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             UpdatePassword();
         }
 
-        // 2. Sự kiện nút Thoát
         private void btnExit_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
-        // --- HÀM XỬ LÝ LOGIC ĐỔI MẬT KHẨU ---
         void UpdatePassword()
         {
             string passwordOld = txbPassOld.Text;
@@ -37,48 +40,50 @@ namespace QuanLyTrungTam
             string reEnterPass = txbReEnter.Text;
             string userName = loginAccount.TenDangNhap;
 
-            // 1. Kiểm tra mật khẩu cũ có đúng không?
-            // Lưu ý: loginAccount.MatKhau là mật khẩu hiện tại trong bộ nhớ
+            // 1. Kiểm tra nhập đủ thông tin
+            if (string.IsNullOrEmpty(passwordOld) || string.IsNullOrEmpty(passwordNew) || string.IsNullOrEmpty(reEnterPass))
+            {
+                MessageBox.Show("Vui lòng điền đầy đủ thông tin!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 2. Kiểm tra mật khẩu cũ (Quan trọng)
             if (!passwordOld.Equals(loginAccount.MatKhau))
             {
-                MessageBox.Show("Mật khẩu cũ không đúng!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Mật khẩu cũ không đúng!", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 txbPassOld.Focus();
                 return;
             }
 
-            // 2. Kiểm tra mật khẩu mới và nhập lại có khớp không?
+            // 3. Kiểm tra độ dài
+            if (passwordNew.Length < 3)
+            {
+                MessageBox.Show("Mật khẩu mới phải từ 3 ký tự trở lên!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 4. Kiểm tra khớp mật khẩu nhập lại
             if (!passwordNew.Equals(reEnterPass))
             {
                 MessageBox.Show("Mật khẩu nhập lại không khớp!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // 3. Gọi DAO để cập nhật xuống Database
-            // (Đảm bảo AccountDAO đã có hàm UpdatePassword như mình hướng dẫn trước đó)
+            // 5. Cập nhật vào Database
             if (AccountDAO.Instance.UpdatePassword(userName, passwordNew))
             {
-                MessageBox.Show("Cập nhật mật khẩu thành công!", "Thông báo");
+                MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // Cập nhật lại mật khẩu trong bộ nhớ để không phải đăng nhập lại
+                // Cập nhật lại mật khẩu trong phiên làm việc hiện tại
                 loginAccount.MatKhau = passwordNew;
+                AppSession.CurrentUser.MatKhau = passwordNew;
 
-                // Xóa trắng các ô nhập
-                txbPassOld.Text = "";
-                txbPassNew.Text = "";
-                txbReEnter.Text = "";
-
-                // Có thể đóng form luôn nếu muốn
-                // this.Close(); 
+                this.Close();
             }
             else
             {
-                MessageBox.Show("Vui lòng điền đúng mật khẩu cũ!", "Thông báo");
+                MessageBox.Show("Lỗi hệ thống! Không thể cập nhật mật khẩu.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void txbPassOld_TextChanged(object sender, EventArgs e)
-        {
-
         }
     }
 }

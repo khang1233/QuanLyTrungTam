@@ -75,16 +75,24 @@
     <Compile Include="DAO\DashboardDAO.cs" />
     <Compile Include="DAO\Database.cs" />
     <Compile Include="DAO\DataProvider.cs" />
+    <Compile Include="DAO\DiemDanhDAO.cs" />
+    <Compile Include="DAO\DiemDAO.cs" />
+    <Compile Include="DAO\FinanceDAO.cs" />
     <Compile Include="DAO\GoogleHelper.cs" />
     <Compile Include="DAO\HocVienDAO.cs" />
     <Compile Include="DAO\KyNangDAO.cs" />
     <Compile Include="DAO\LopHocDAO.cs" />
+    <Compile Include="DAO\NhanVienDAO.cs" />
+    <Compile Include="DAO\PhongHocDAO.cs" />
+    <Compile Include="DAO\ScheduleHelper.cs" />
     <Compile Include="DAO\StatsDAO.cs" />
     <Compile Include="DAO\TuitionDAO.cs" />
     <Compile Include="DTO\Account.cs" />
     <Compile Include="DTO\AppSession.cs" />
     <Compile Include="DTO\DangKyDTO.cs" />
+    <Compile Include="DTO\HocVienDTO.cs" />
     <Compile Include="DTO\KyNangDTO.cs" />
+    <Compile Include="DTO\NhanVienDTO.cs" />
     <Compile Include="fChangePassword.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -121,11 +129,29 @@
     <Compile Include="FrmDashboard.Designer.cs">
       <DependentUpon>FrmDashboard.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmDiem.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmDiem.Designer.cs">
+      <DependentUpon>FrmDiem.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmDiemDanh.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmDiemDanh.Designer.cs">
+      <DependentUpon>FrmDiemDanh.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmHocPhi.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmHocPhi.Designer.cs">
       <DependentUpon>FrmHocPhi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHocVien.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHocVien.Designer.cs">
+      <DependentUpon>FrmHocVien.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmHomeHocVien.cs">
       <SubType>Form</SubType>
@@ -142,14 +168,35 @@
     <Compile Include="FrmQuanLyHocVien.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmQuanLyHocVien.Designer.cs">
-      <DependentUpon>FrmQuanLyHocVien.cs</DependentUpon>
-    </Compile>
     <Compile Include="FrmQuanLyMonHoc.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmQuanLyMonHoc.Designer.cs">
       <DependentUpon>FrmQuanLyMonHoc.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmQuanLyNhanSu.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmQuanLyNhanSu.Designer.cs">
+      <DependentUpon>FrmQuanLyNhanSu.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSchedule.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSchedule.Designer.cs">
+      <DependentUpon>FrmSchedule.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSystemAdmin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSystemAdmin.Designer.cs">
+      <DependentUpon>FrmSystemAdmin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmTaiChinh.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmTaiChinh.Designer.cs">
+      <DependentUpon>FrmTaiChinh.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmThongTinCaNhan.cs">
       <SubType>Form</SubType>
@@ -159,9 +206,6 @@
     </Compile>
     <Compile Include="FrmTraCuuHocPhi.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FrmTraCuuHocPhi.Designer.cs">
-      <DependentUpon>FrmTraCuuHocPhi.cs</DependentUpon>
     </Compile>
     <Compile Include="PhanQuyen.cs">
       <SubType>Form</SubType>

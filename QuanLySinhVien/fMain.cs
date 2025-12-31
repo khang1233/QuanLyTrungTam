@@ -1,242 +1,302 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
+﻿using QuanLyTrungTam.DAO;
 using QuanLyTrungTam.DTO;
-using QuanLyTrungTam; // Namespace chứa các Form con
+using QuanLyTrungTam.Utilities;
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace QuanLyTrungTam
 {
     public partial class fMain : Form
     {
-        private Button currentButton;
-        private Form activeForm;
+        // --- 1. KHAI BÁO BIẾN ---
+        private Button btnNavDashboard;
+        private FlowLayoutPanel pnlSidebar;
+        private Panel pnlHeader;
+        private Panel pnlBody;
+        private Label lblHeaderTitle;
+        private Button currentButton; // Nút đang chọn
+
+        // Các nút Menu chính
+        private Button btnNavHocVien, btnNavTaiChinh, btnNavDaoTao, btnNavHeThong;
+        private Button btnNavDoiMatKhau; // [MỚI] Nút Đổi Mật Khẩu
+
+        // Các nút Menu con (để gọi từ bên ngoài nếu cần)
+        private Button btnMonHoc, btnLopHoc, btnGiangVien, btnTKB;
+
+        // Các Panel menu con
+        private Panel pnlSubHocVien, pnlSubDaoTao, pnlSubVanHanh, pnlSubTaiChinh, pnlSubHeThong;
+
         private Account loginAccount;
+        private Form activeChildForm;
 
         public fMain(Account acc)
         {
-            InitializeComponent();
             this.loginAccount = acc;
+            AppSession.CurrentUser = acc;
+            BuildProfessionalUI();
+            ApplyUserPermissions();
 
-            // Cấu hình giao diện ngay khi khởi động
-            SetupUI();
-        }
-
-        // =================================================================================
-        // 1. CẤU HÌNH GIAO DIỆN & PHÂN QUYỀN
-        // =================================================================================
-        private void SetupUI()
-        {
-            string quyen = loginAccount.Quyen.Trim().ToLower();
-
-            // Hiển thị tên người dùng
-            lblTitle.Text = "Xin chào: " + loginAccount.TenDangNhap.ToUpper();
-
-            // Bước 1: Ẩn hết các nút trước để reset trạng thái
-            DisableAllButtons();
-
-            // Bước 2: Hiển thị nút theo quyền
-            if (quyen == "hocvien" || quyen == "hv" || quyen == "sinhvien")
+            // Tự động click Dashboard nếu không phải Học viên
+            if (!loginAccount.Quyen.ToLower().Contains("hocvien"))
             {
-                // --- QUYỀN HỌC VIÊN ---
-                // 1. Nút Đăng Ký (Để xem lớp và đăng ký thêm)
-                SetVisibleButton("btnDangKy", true);
-
-                // 2. Nút Học Phí (Để xem nợ và đóng tiền online/chuyển khoản)
-                // Lưu ý: Form Học phí hiện tại của bạn đã có nút "Thanh toán" (InsertThanhToan)
-                SetVisibleButton("btnHocPhi", true);
-
-                // 3. Nút Tài khoản (Để đổi mật khẩu và Liên kết Google)
-                SetVisibleButton("btnTaiKhoan", true);
-                OpenChildForm(new FrmHomeHocVien(loginAccount.MaNguoiDung), null);
-
-                // Đổi tiêu đề cho thân thiện
-                lblTitle.Text = "TRANG CHỦ HỌC VIÊN";
-                // Ẩn các nút quản lý của Admin
-                SetVisibleButton("btnSinhVien", false);
-                SetVisibleButton("btnSystem", false);
-            }
-            else // ADMIN, QUẢN LÝ
-            {
-                // --- QUYỀN ADMIN ---
-                SetVisibleButton("btnSystem", true);    // Dashboard
-                SetVisibleButton("btnSinhVien", true);  // Quản lý DS Học viên
-                SetVisibleButton("btnLopHoc", true);    // Quản lý Lớp
-                SetVisibleButton("btnMonHoc", true);    // Quản lý Môn/Kỹ năng
-
-                // Hai chức năng nghiệp vụ chính:
-                SetVisibleButton("btnTuyenSinh", true); // <--- [MỚI] Đăng ký tuyển sinh tập trung
-                SetVisibleButton("btnTraCuu", true);    // Tra cứu & Thu ngân
-
-                SetVisibleButton("btnTaiKhoan", true);
+                this.Load += (s, e) =>
+                {
+                    if (btnNavDashboard != null && btnNavDashboard.Visible)
+                        btnNavDashboard.PerformClick();
+                };
             }
         }
 
-        // Hàm ẩn tất cả nút (để tránh sót quyền)
-        private void DisableAllButtons()
+        // =========================================================================
+        // 2. DỰNG GIAO DIỆN (MENU SIDEBAR)
+        // =========================================================================
+        private void BuildProfessionalUI()
         {
-            SetVisibleButton("btnSinhVien", false);
-            SetVisibleButton("btnGiangVien", false);
-            SetVisibleButton("btnLopHoc", false);
-            SetVisibleButton("btnMonHoc", false);
-            SetVisibleButton("btnKhoa", false);
-            SetVisibleButton("btnHocPhi", false);
-            SetVisibleButton("btnDiem", false);
-            SetVisibleButton("btnSystem", false);
-            SetVisibleButton("btnDangKy", false);
-            SetVisibleButton("btnTraCuu", false);
-            SetVisibleButton("btnTuyenSinh", false); // Ẩn nút mới
+            this.Controls.Clear();
+            this.Size = new Size(1300, 800);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Text = "Quản Lý Trung Tâm Đào Tạo - Professional UI";
+
+            // A. SIDEBAR
+            pnlSidebar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                Width = 260,
+                BackColor = Color.FromArgb(31, 30, 68),
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true
+            };
+            this.Controls.Add(pnlSidebar);
+
+            // B. HEADER
+            pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.FromArgb(0, 150, 136) };
+            this.Controls.Add(pnlHeader);
+            lblHeaderTitle = new Label { Text = "TRANG CHỦ", ForeColor = Color.White, Font = new Font("Segoe UI", 15, FontStyle.Bold), AutoSize = true, Location = new Point(25, 20) };
+            pnlHeader.Controls.Add(lblHeaderTitle);
+
+            // C. BODY
+            pnlBody = new Panel { Dock = DockStyle.Fill, BackColor = Color.WhiteSmoke, Padding = new Padding(10) };
+            this.Controls.Add(pnlBody);
+            pnlBody.BringToFront();
+
+            // --- TẠO MENU ---
+
+            // 1. Dashboard
+            btnNavDashboard = CreateMenuButton("  📊   DASHBOARD", btnDashboard_Click);
+
+            // 2. HỌC VIÊN (Menu Xổ Xuống)
+            btnNavHocVien = CreateMenuButton("  👥   HỌC VIÊN", (s, e) => ShowSubMenu(pnlSubHocVien, s));
+            pnlSubHocVien = CreateSubPanel(
+                new string[] { "Thông tin học viên", "Đăng ký lớp" },
+                new EventHandler[] { btnSinhVien_Click, btnDangKyLop_Click }
+            );
+
+            // 3. ĐÀO TẠO
+            CreateMenuButton("  📚   ĐÀO TẠO", (s, e) => ShowSubMenu(pnlSubDaoTao, s));
+            pnlSubDaoTao = CreateSubPanel(
+                new string[] { "Môn học", "Lớp học", "Nhân sự", "Thời khóa biểu" },
+                new EventHandler[] { btnMonHoc_Click, btnLopHoc_Click, btnGiangVien_Click, btnTKB_Click }
+            );
+
+            // 4. VẬN HÀNH
+            CreateMenuButton("  📋   VẬN HÀNH", (s, e) => ShowSubMenu(pnlSubVanHanh, s));
+            pnlSubVanHanh = CreateSubPanel(
+                new string[] { "Điểm danh", "Điểm số" },
+                new EventHandler[] { btnDiemDanh_Click, btnDiem_Click }
+            );
+
+            // 5. TÀI CHÍNH
+            btnNavTaiChinh = CreateMenuButton("  💰   TÀI CHÍNH", (s, e) => ShowSubMenu(pnlSubTaiChinh, s));
+            pnlSubTaiChinh = CreateSubPanel(
+                new string[] { "Thu học phí", "Báo Cáo Tài Chính" },
+                new EventHandler[] { btnTraCuuPhi_Click, btnThuChi_Click }
+            );
+
+            // 6. HỆ THỐNG
+            CreateMenuButton("  ⚙️   HỆ THỐNG", (s, e) => ShowSubMenu(pnlSubHeThong, s));
+            pnlSubHeThong = CreateSubPanel(
+                new string[] { "Tài khoản", "Nhật ký" },
+                new EventHandler[] { btnTaiKhoan_Click, btnNhatKy_Click }
+            );
+
+            // [MỚI] 7. ĐỔI MẬT KHẨU (Nằm riêng cho dễ thấy)
+            btnNavDoiMatKhau = CreateMenuButton("  🔐   ĐỔI MẬT KHẨU", btnDoiMatKhau_Click);
+
+            // 8. Đăng xuất
+            CreateMenuButton("  🚪   ĐĂNG XUẤT", (s, e) => this.Close());
         }
 
-        // Hàm helper để bật/tắt nút an toàn (tránh lỗi nếu nút chưa tạo)
-        private void SetVisibleButton(string btnName, bool isVisible)
+        // --- CÁC HÀM HELPER ---
+        private Button CreateMenuButton(string text, EventHandler click)
         {
-            if (this.panelMenu.Controls.ContainsKey(btnName))
-                this.panelMenu.Controls[btnName].Visible = isVisible;
+            Button btn = new Button
+            {
+                Text = "  " + text,
+                Height = 55,
+                Width = 260,
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.Gainsboro,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0),
+                Tag = Color.FromArgb(31, 30, 68)
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Click += (s, e) => { ActivateButton(s); click?.Invoke(s, e); };
+            pnlSidebar.Controls.Add(btn);
+            return btn;
         }
 
-        // =================================================================================
-        // 2. CƠ CHẾ MỞ FORM CON (TAB)
-        // =================================================================================
-        private void OpenChildForm(Form childForm, object btnSender)
+        private Panel CreateSubPanel(string[] items, EventHandler[] events)
         {
-            if (activeForm != null) activeForm.Close();
-            ActivateButton(btnSender);
-            activeForm = childForm;
-            childForm.TopLevel = false;
-            childForm.FormBorderStyle = FormBorderStyle.None;
-            childForm.Dock = DockStyle.Fill;
-            this.panelDesktop.Controls.Add(childForm);
-            this.panelDesktop.Tag = childForm;
-            childForm.BringToFront();
-            childForm.Show();
+            Panel p = new Panel { Height = items.Length * 45, Width = 260, Visible = false, BackColor = Color.FromArgb(45, 45, 72), Margin = new Padding(0) };
+            for (int i = 0; i < items.Length; i++)
+            {
+                Button b = new Button { Text = "    ● " + items[i], Dock = DockStyle.Top, Height = 45, FlatStyle = FlatStyle.Flat, ForeColor = Color.Silver, Font = new Font("Segoe UI", 9), TextAlign = ContentAlignment.MiddleLeft, Cursor = Cursors.Hand };
+                b.FlatAppearance.BorderSize = 0;
+                int idx = i;
+                b.Click += (s, e) => { events[idx]?.Invoke(s, e); };
+                p.Controls.Add(b);
+                b.BringToFront();
+            }
+            pnlSidebar.Controls.Add(p);
+            return p;
         }
 
         private void ActivateButton(object btnSender)
         {
-            if (btnSender != null && btnSender is Button)
+            if (btnSender != null && currentButton != (Button)btnSender)
             {
-                // Reset màu nút cũ
-                foreach (Control previousBtn in panelMenu.Controls)
-                {
-                    if (previousBtn.GetType() == typeof(Button))
-                    {
-                        previousBtn.BackColor = Color.FromArgb(51, 51, 76);
-                        previousBtn.ForeColor = Color.Gainsboro;
-                    }
-                }
-                // Highlight nút mới
+                DisableButton();
                 currentButton = (Button)btnSender;
-                currentButton.BackColor = Color.FromArgb(0, 150, 136); // Màu xanh nổi bật
+                currentButton.BackColor = Color.FromArgb(0, 150, 136);
                 currentButton.ForeColor = Color.White;
             }
         }
 
-        // =================================================================================
-        // 3. SỰ KIỆN CLICK (MENU NAVIGATION)
-        // =================================================================================
-
-        // [ADMIN] - DASHBOARD
-        private void btnSystem_Click(object sender, EventArgs e)
+        private void DisableButton()
         {
-            OpenChildForm(new FrmDashboard(), sender);
-            lblTitle.Text = "TỔNG QUAN HỆ THỐNG";
-        }
-
-        // [ADMIN] - QUẢN LÝ HỒ SƠ HỌC VIÊN
-        private void btnSinhVien_Click(object sender, EventArgs e)
-        {
-            OpenChildForm(new FrmQuanLyHocVien(), sender);
-            lblTitle.Text = "QUẢN LÝ DANH SÁCH HỌC VIÊN";
-        }
-
-        // [ADMIN] - QUẢN LÝ LỚP HỌC
-        private void btnLopHoc_Click(object sender, EventArgs e)
-        {
-            OpenChildForm(new FrmLop(), sender);
-            lblTitle.Text = "QUẢN LÝ LỚP HỌC";
-        }
-
-        // [ADMIN] - QUẢN LÝ MÔN HỌC (KỸ NĂNG)
-        private void btnMonHoc_Click(object sender, EventArgs e)
-        {
-            OpenChildForm(new FrmQuanLyMonHoc(), sender);
-            lblTitle.Text = "QUẢN LÝ DANH MỤC MÔN HỌC";
-        }
-
-        // [ADMIN] - TRA CỨU & THU NGÂN
-        private void btnTraCuu_Click(object sender, EventArgs e)
-        {
-            OpenChildForm(new FrmTraCuuHocPhi(), sender);
-            lblTitle.Text = "TRA CỨU HỌC VIÊN HỌC PHÍ";
-        }
-        
-        // [ADMIN] - TUYỂN SINH (ĐĂNG KÝ TẬP TRUNG) <--- MỚI
-        private void btnTuyenSinh_Click(object sender, EventArgs e)
-        {
-            // Mở form FrmDangKyAdmin mới tạo
-            OpenChildForm(new FrmDangKyAdmin(), sender);
-            lblTitle.Text = "QUẢN LÝ ĐĂNG KÝ TUYỂN SINH";
-        }
-
-        // [CHUNG] - TÀI KHOẢN
-        private void btnTaiKhoan_Click(object sender, EventArgs e)
-        {
-            FrmThongTinCaNhan f = new FrmThongTinCaNhan(loginAccount);
-            if (f.ShowDialog() == DialogResult.Abort)
+            if (currentButton != null)
             {
-                this.Close(); // Đăng xuất
+                currentButton.BackColor = Color.FromArgb(31, 30, 68);
+                currentButton.ForeColor = Color.Gainsboro;
             }
         }
 
-        // --- CÁC NÚT DÀNH RIÊNG CHO HỌC VIÊN ---
-
-        private void btnDangKy_Click(object sender, EventArgs e)
+        private void ShowSubMenu(Panel sub, object btnSender)
         {
-            OpenChildForm(new FrmDangKy(loginAccount.MaNguoiDung), sender);
-            lblTitle.Text = "ĐĂNG KÝ MÔN HỌC";
+            if (sub.Visible) sub.Visible = false;
+            else
+            {
+                if (pnlSubHocVien != null) pnlSubHocVien.Visible = false;
+                if (pnlSubDaoTao != null) pnlSubDaoTao.Visible = false;
+                if (pnlSubVanHanh != null) pnlSubVanHanh.Visible = false;
+                if (pnlSubTaiChinh != null) pnlSubTaiChinh.Visible = false;
+                if (pnlSubHeThong != null) pnlSubHeThong.Visible = false;
+                sub.Visible = true;
+            }
         }
 
-        private void btnHocPhi_Click(object sender, EventArgs e)
+        private void ActivateChildForm(Form child)
         {
-            OpenChildForm(new FrmHocPhi(loginAccount.MaNguoiDung), sender);
-            lblTitle.Text = "THÔNG TIN HỌC PHÍ";
+            if (activeChildForm != null) activeChildForm.Close();
+            activeChildForm = child;
+            child.TopLevel = false;
+            child.FormBorderStyle = FormBorderStyle.None;
+            child.Dock = DockStyle.Fill;
+            pnlBody.Controls.Add(child);
+            child.BringToFront();
+            child.Show();
         }
-        // Mở file fMain.cs, thêm các hàm này vào trong class fMain
 
-        // 1. Hàm nhảy sang Tab Tra Cứu
-        public void GotoTraCuuPhi(string maHV)
+        // --- PHÂN QUYỀN NGƯỜI DÙNG ---
+        private void ApplyUserPermissions()
         {
-            // Tạo form mới
+            string role = loginAccount.Quyen;
+
+            // 1. ADMIN: Hiện tất cả
+            if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase)) return;
+
+            // 2. HỌC VIÊN: Ẩn sidebar, chuyển sang Form riêng
+            if (role.Equals("HocVien", StringComparison.OrdinalIgnoreCase))
+            {
+                pnlSidebar.Visible = false;
+                ActivateChildForm(new FrmHomeHocVien(loginAccount.MaNguoiDung));
+                return;
+            }
+
+            // 3. NHÂN SỰ (Giáo viên / Trợ giảng)
+            if (role.Equals("GiaoVien", StringComparison.OrdinalIgnoreCase) ||
+                role.Equals("TroGiang", StringComparison.OrdinalIgnoreCase) ||
+                role.Equals("NhanSu", StringComparison.OrdinalIgnoreCase))
+            {
+                // Ẩn Dashboard & Tài Chính & Học Viên
+                if (btnNavDashboard != null) btnNavDashboard.Visible = false;
+                if (btnNavHocVien != null) btnNavHocVien.Visible = false;
+                if (btnNavTaiChinh != null) btnNavTaiChinh.Visible = false;
+
+                // Ẩn menu Hệ thống (Nhật ký, Tài khoản) - Chỉ giữ nút Đổi Mật Khẩu riêng
+                foreach (Control c in pnlSidebar.Controls)
+                {
+                    if (c is Button btn && btn.Text.Contains("HỆ THỐNG")) btn.Visible = false;
+                }
+
+                // Xử lý menu Đào tạo: Chỉ hiện TKB
+                foreach (Control c in pnlSubDaoTao.Controls)
+                {
+                    if (!c.Text.Contains("Thời khóa biểu")) c.Visible = false;
+                }
+
+                // Mặc định mở TKB
+                lblHeaderTitle.Text = "LỊCH DẠY CỦA TÔI";
+                ActivateChildForm(new FrmSchedule());
+            }
+        }
+
+        // --- SỰ KIỆN CLICK MENU ---
+        private void btnDashboard_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "DASHBOARD QUẢN TRỊ"; ActivateChildForm(new FrmDashboard()); }
+        private void btnSinhVien_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "HỒ SƠ HỌC VIÊN"; ActivateChildForm(new FrmQuanLyHocVien()); }
+        private void btnDangKyLop_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "ĐĂNG KÝ LỚP HỌC"; ActivateChildForm(new FrmDangKyAdmin()); }
+        private void btnMonHoc_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "MÔN HỌC"; ActivateChildForm(new FrmQuanLyMonHoc()); }
+        private void btnLopHoc_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "LỚP HỌC"; ActivateChildForm(new FrmLop()); }
+        private void btnGiangVien_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "NHÂN SỰ"; ActivateChildForm(new FrmQuanLyNhanSu()); }
+        private void btnTKB_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "TRA CỨU THỜI KHÓA BIỂU"; ActivateChildForm(new FrmSchedule()); }
+        private void btnDiemDanh_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "ĐIỂM DANH"; ActivateChildForm(new FrmDiemDanh()); }
+        private void btnDiem_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "ĐIỂM SỐ"; ActivateChildForm(new FrmDiem()); }
+        private void btnTraCuuPhi_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "THU HỌC PHÍ"; ActivateChildForm(new FrmTraCuuHocPhi()); }
+        private void btnThuChi_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "QUẢN LÝ THU CHI"; ActivateChildForm(new FrmTaiChinh()); }
+        private void btnTaiKhoan_Click(object sender, EventArgs e) { new FrmThongTinCaNhan(loginAccount).ShowDialog(); }
+        private void btnNhatKy_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "NHẬT KÝ HỆ THỐNG"; ActivateChildForm(new FrmSystemAdmin()); }
+
+        // [MỚI] SỰ KIỆN NÚT ĐỔI MẬT KHẨU
+        private void btnDoiMatKhau_Click(object sender, EventArgs e)
+        {
+            // Mở form fChangePassword dưới dạng Dialog (Cửa sổ con)
+            fChangePassword f = new fChangePassword(loginAccount);
+            f.ShowDialog();
+        }
+
+        // --- HÀM CHUYỂN TAB TỪ FORM CON ---
+        public void NavigateToThuHocPhi(string maHV)
+        {
+            if (pnlSubTaiChinh.Visible == false) ShowSubMenu(pnlSubTaiChinh, null);
+            ActivateButton(btnNavTaiChinh);
+            lblHeaderTitle.Text = "THU PHÍ HỌC VIÊN";
             FrmTraCuuHocPhi f = new FrmTraCuuHocPhi();
-
-            // Mở form này lên panel chính (giả lập bấm nút Tra Cứu)
-            OpenChildForm(f, btnTraCuu);
-
-            // Cập nhật tiêu đề
-            lblTitle.Text = "TRA CỨU HỌC VIÊN HỌC PHÍ"; // [cite: 939]
-
-            // Gọi hàm tự động tìm kiếm vừa viết ở Bước 1
+            ActivateChildForm(f);
             f.AutoSearch(maHV);
         }
-
-        // 2. Hàm nhảy sang Tab Đăng Ký (Tuyển Sinh)
-        public void GotoDangKyAdmin(string maHV)
+        public void NavigateToDangKy(string maHV)
         {
-            // Tạo form đăng ký admin
+            if (pnlSubHocVien.Visible == false) ShowSubMenu(pnlSubHocVien, null);
+            lblHeaderTitle.Text = "ĐĂNG KÝ LỚP HỌC";
             FrmDangKyAdmin f = new FrmDangKyAdmin();
-
-            // Mở form lên (giả lập bấm nút Tuyển Sinh)
-            OpenChildForm(f, btnTuyenSinh);
-
-            // Cập nhật tiêu đề
-            lblTitle.Text = "QUẢN LÝ ĐĂNG KÝ TUYỂN SINH"; // [cite: 946]
-
-            // Gọi hàm tự động chọn sinh viên vừa viết ở Bước 1
-            f.AutoSelectStudent(maHV);
+            ActivateChildForm(f);
+            if (!string.IsNullOrEmpty(maHV)) f.AutoSelectStudent(maHV);
         }
-        // --- CÁC SỰ KIỆN CŨ (GIỮ LẠI ĐỂ TRÁNH LỖI DESIGNER) ---
-        private void btnGiangVien_Click(object sender, EventArgs e) { }
-        private void btnKhoa_Click(object sender, EventArgs e) { }
-        private void btnDiem_Click(object sender, EventArgs e) { }
     }
 }
