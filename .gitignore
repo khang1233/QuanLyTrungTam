@@ -1,12 +1,11 @@
-# Visual Studio
+# Bỏ qua thư mục build (rác)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# Bỏ qua file cấu hình riêng của Visual Studio
 .vs/
-bin/
-obj/
-
-# NuGet
-packages/
-
-# User-specific
 *.user
 *.suo
-*.cache
+*.userprefs
