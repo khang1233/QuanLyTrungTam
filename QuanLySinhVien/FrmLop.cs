@@ -17,6 +17,9 @@ namespace QuanLyTrungTam
         private Button btnSearch;
         private DataGridView dgvMain;
 
+        // Biến cờ để chặn sự kiện sinh mã tự động khi click vào bảng
+        private bool isBindingData = false;
+
         public FrmLop()
         {
             InitializeComponent();
@@ -128,44 +131,38 @@ namespace QuanLyTrungTam
             this.Controls.Add(pnlHeader);
         }
 
-        // 3. LOGIC XỬ LÝ DỮ LIỆU (LOAD DATA & CALCULATE)
+        // 3. LOGIC XỬ LÝ DỮ LIỆU
         void LoadData()
         {
             try
             {
-                // [FIX LỖI 1]: Dùng hàm GetListKyNangActive() thay vì GetListKyNang()
-                // Chỉ load những môn đang hoạt động để tránh đăng ký nhầm
                 DataTable dtMon = KyNangDAO.Instance.GetListKyNangActive();
-
                 if (dtMon != null && dtMon.Rows.Count > 0)
                 {
                     cbMonHoc.DataSource = dtMon;
                     cbMonHoc.DisplayMember = "TenKyNang";
                     cbMonHoc.ValueMember = "MaKyNang";
 
+                    // Gán sự kiện sau khi load dữ liệu
                     cbMonHoc.SelectedIndexChanged -= CbMonHoc_SelectedIndexChanged;
                     cbMonHoc.SelectedIndexChanged += CbMonHoc_SelectedIndexChanged;
+
                     cbMonHoc.SelectedIndex = 0;
                 }
                 else
                 {
-                    cbMonHoc.DataSource = null; // Clear nếu không có môn nào
+                    cbMonHoc.DataSource = null;
                 }
 
-                // Load Combo Phòng
                 cbPhongHoc.DataSource = PhongHocDAO.Instance.GetListPhong();
                 cbPhongHoc.DisplayMember = "TenPhong"; cbPhongHoc.ValueMember = "MaPhong";
 
-                // Load Combo Nhân Sự
                 DataTable dtNS = NhanVienDAO.Instance.GetListNhanVien();
-
-                // 1. GIÁO VIÊN
                 DataView dvGV = new DataView(dtNS);
                 dvGV.RowFilter = "LoaiNS LIKE '%Giáo%' OR LoaiNS LIKE '%Giao%'";
                 cbGiaoVien.DataSource = dvGV;
                 cbGiaoVien.DisplayMember = "HoTen"; cbGiaoVien.ValueMember = "MaNS";
 
-                // 2. TRỢ GIẢNG
                 DataView dvTG = new DataView(dtNS);
                 dvTG.RowFilter = "LoaiNS LIKE '%Trợ%' OR LoaiNS LIKE '%Tro%'";
                 if (dvTG.Count > 0)
@@ -174,7 +171,6 @@ namespace QuanLyTrungTam
                     cbTroGiang.DisplayMember = "HoTen"; cbTroGiang.ValueMember = "MaNS";
                 }
 
-                // Load Danh sách Lớp
                 LoadListLopHoc();
             }
             catch (Exception ex)
@@ -209,8 +205,10 @@ namespace QuanLyTrungTam
             if (dgvMain.Columns.Contains("NgayKetThuc")) dgvMain.Columns["NgayKetThuc"].DefaultCellStyle.Format = "dd/MM/yyyy";
         }
 
-        private void CbMonHoc_SelectedIndexChanged(object sender, EventArgs e)
+        // [QUAN TRỌNG] Hàm sinh mã tự động tách riêng
+        private void GenerateAutoCode()
         {
+            if (isBindingData) return; // Nếu đang click bảng thì thôi
             try
             {
                 if (cbMonHoc.SelectedValue != null)
@@ -218,10 +216,17 @@ namespace QuanLyTrungTam
                     string maMon = "";
                     if (cbMonHoc.SelectedValue is DataRowView row) maMon = row["MaKyNang"].ToString();
                     else maMon = cbMonHoc.SelectedValue.ToString();
+
+                    // Gọi DAO để sinh mã
                     txbMaLop.Text = LopHocDAO.Instance.GetNewMaLop(maMon);
                 }
             }
             catch { }
+        }
+
+        private void CbMonHoc_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            GenerateAutoCode();
         }
 
         private DateTime CalculateEndDate(DateTime startDate, string scheduleStr, int totalSessions)
@@ -254,7 +259,6 @@ namespace QuanLyTrungTam
         // 4. LOGIC SỰ KIỆN (BUTTONS & GRID)
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            // Kiểm tra chọn môn học
             if (cbMonHoc.SelectedValue == null || string.IsNullOrEmpty(cbMonHoc.Text))
             {
                 MessageBox.Show("Vui lòng chọn Môn Học trước!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -262,87 +266,64 @@ namespace QuanLyTrungTam
             }
             if (string.IsNullOrEmpty(txbTenLop.Text)) { MessageBox.Show("Chưa nhập tên lớp!", "Thông báo"); return; }
 
-            // [FIX LỖI 2]: KIỂM TRA CHUYÊN NGÀNH GIÁO VIÊN
+            // KIỂM TRA CHUYÊN NGÀNH
             if (cbGiaoVien.SelectedValue != null)
             {
                 DataRowView rowMon = cbMonHoc.SelectedItem as DataRowView;
                 string chuyenNganhMon = "";
                 if (rowMon != null && rowMon.DataView.Table.Columns.Contains("ChuyenNganh"))
-                {
                     chuyenNganhMon = rowMon["ChuyenNganh"].ToString();
-                }
 
                 string maGV = GetVal(cbGiaoVien);
                 string chuyenNganhGV = NhanVienDAO.Instance.GetChuyenNganh(maGV);
 
                 if (!string.IsNullOrEmpty(chuyenNganhMon) && !string.IsNullOrEmpty(chuyenNganhGV))
                 {
-                    // So sánh không phân biệt hoa thường
                     if (!chuyenNganhMon.Equals(chuyenNganhGV, StringComparison.OrdinalIgnoreCase))
                     {
-                        DialogResult confirm = MessageBox.Show(
-                            $"Cảnh báo chuyên môn:\nGiáo viên này có chuyên ngành '{chuyenNganhGV}', khác với môn học '{chuyenNganhMon}'.\n\nBạn có chắc chắn muốn tiếp tục mở lớp không?",
-                            "Cảnh báo lệch chuyên ngành",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Warning
-                        );
-
-                        if (confirm == DialogResult.No) return; // Hủy bỏ thao tác
+                        if (MessageBox.Show($"Cảnh báo: GV chuyên '{chuyenNganhGV}', môn '{chuyenNganhMon}'. Tiếp tục?",
+                            "Lệch chuyên môn", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                            return;
                     }
                 }
             }
 
-            // --- KIỂM TRA LOGIC TRÙNG LỊCH ---
-            string caHoc = cbCaHoc.Text;
-            string lichHoc = cbThu.Text;
-            string maPhong = GetVal(cbPhongHoc);
-            string maGVCheck = GetVal(cbGiaoVien);
-            string maTGCheck = GetVal(cbTroGiang);
+            // KIỂM TRA TRÙNG LỊCH
+            string conflict = LopHocDAO.Instance.GetConflictMessage(GetVal(cbPhongHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), cbThu.Text, cbCaHoc.Text, "");
+            if (conflict != null) { MessageBox.Show(conflict, "Trùng lịch", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
-            string conflictMsg = LopHocDAO.Instance.GetConflictMessage(maPhong, maGVCheck, maTGCheck, lichHoc, caHoc, "");
-
-            if (conflictMsg != null)
+            // INSERT
+            if (LopHocDAO.Instance.InsertLopFull(txbMaLop.Text, txbTenLop.Text, GetVal(cbMonHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), GetVal(cbPhongHoc), cbThu.Text, cbCaHoc.Text, (int)nmSiSo.Value, DateTime.Now))
             {
-                MessageBox.Show(conflictMsg, "Cảnh báo trùng lịch", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            // Insert
-            bool result = LopHocDAO.Instance.InsertLopFull(txbMaLop.Text, txbTenLop.Text,
-                GetVal(cbMonHoc), maGVCheck, maTGCheck, maPhong,
-                lichHoc, caHoc, (int)nmSiSo.Value, DateTime.Now);
-
-            if (result)
-            {
-                MessageBox.Show("Mở lớp mới thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Mở lớp mới thành công!");
                 LoadListLopHoc();
                 ResetForm();
             }
-            else MessageBox.Show("Thêm thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else MessageBox.Show("Thêm thất bại!");
         }
 
         private void BtnEdit_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(txbMaLop.Text)) return;
+            string conflict = LopHocDAO.Instance.GetConflictMessage(GetVal(cbPhongHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), cbThu.Text, cbCaHoc.Text, txbMaLop.Text);
+            if (conflict != null) { MessageBox.Show(conflict, "Trùng lịch", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
-            string conflictMsg = LopHocDAO.Instance.GetConflictMessage(GetVal(cbPhongHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), cbThu.Text, cbCaHoc.Text, txbMaLop.Text);
-            if (conflictMsg != null) { MessageBox.Show(conflictMsg, "Cảnh báo trùng lịch", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
-
-            bool result = LopHocDAO.Instance.UpdateLopFull(txbMaLop.Text, txbTenLop.Text,
-                GetVal(cbGiaoVien), GetVal(cbTroGiang), GetVal(cbPhongHoc),
-                cbThu.Text, cbCaHoc.Text, (int)nmSiSo.Value, cbTrangThai.Text);
-
-            if (result) { MessageBox.Show("Cập nhật thành công!"); LoadListLopHoc(); }
+            if (LopHocDAO.Instance.UpdateLopFull(txbMaLop.Text, txbTenLop.Text, GetVal(cbGiaoVien), GetVal(cbTroGiang), GetVal(cbPhongHoc), cbThu.Text, cbCaHoc.Text, (int)nmSiSo.Value, cbTrangThai.Text))
+            { MessageBox.Show("Cập nhật thành công!"); LoadListLopHoc(); }
             else MessageBox.Show("Lỗi cập nhật!");
         }
 
         private void BtnDel_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(txbMaLop.Text)) return;
-            if (MessageBox.Show("Xóa lớp sẽ xóa hết đăng ký. Tiếp tục?", "Cảnh báo", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show($"CẢNH BÁO: Xóa lớp {txbTenLop.Text} sẽ xóa vĩnh viễn Đăng ký, Điểm, Điểm danh của lớp này.\nBạn có chắc không?", "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                if (LopHocDAO.Instance.DeleteLop(txbMaLop.Text)) { MessageBox.Show("Đã xóa."); LoadListLopHoc(); ResetForm(); }
-                else MessageBox.Show("Lỗi xóa lớp.");
+                try
+                {
+                    if (LopHocDAO.Instance.DeleteLop(txbMaLop.Text)) { MessageBox.Show("Đã xóa lớp thành công."); LoadListLopHoc(); ResetForm(); }
+                    else MessageBox.Show("Lỗi: Không thể xóa lớp.");
+                }
+                catch (Exception ex) { MessageBox.Show("Lỗi SQL: " + ex.Message); }
             }
         }
 
@@ -359,6 +340,8 @@ namespace QuanLyTrungTam
             if (e.RowIndex < 0) return;
             try
             {
+                isBindingData = true; // [FIX] CHẶN SINH MÃ KHI CLICK GRID
+
                 DataGridViewRow r = dgvMain.Rows[e.RowIndex];
                 txbMaLop.Text = r.Cells["MaLop"].Value?.ToString();
                 txbTenLop.Text = r.Cells["TenLop"].Value?.ToString();
@@ -377,13 +360,20 @@ namespace QuanLyTrungTam
                 cbTrangThai.Text = r.Cells["TrangThai"].Value?.ToString();
             }
             catch { }
+            finally { isBindingData = false; } // [FIX] MỞ LẠI CỜ
         }
 
         private void ResetForm()
         {
             txbMaLop.Clear(); txbTenLop.Clear(); cbThu.SelectedIndex = 0; cbCaHoc.SelectedIndex = 0;
-            if (cbMonHoc.Items.Count > 0) cbMonHoc.SelectedIndex = 0;
             SetPlaceholder(txbSearch, "Tìm kiếm..."); FilterData("");
+
+            // [FIX] ÉP BUỘC SINH MÃ TỰ ĐỘNG KHI BẤM LÀM MỚI
+            if (cbMonHoc.Items.Count > 0)
+            {
+                if (cbMonHoc.SelectedIndex == 0) GenerateAutoCode(); // Nếu đã là 0 thì gọi hàm trực tiếp
+                else cbMonHoc.SelectedIndex = 0; // Nếu chưa là 0 thì đổi về 0 (sẽ tự kích hoạt event)
+            }
         }
 
         private string GetVal(ComboBox cb) => cb.SelectedValue != null ? cb.SelectedValue.ToString() : "";
