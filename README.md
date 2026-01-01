@@ -89,8 +89,8 @@ Minh bạch hóa dòng tiền và hỗ trợ thu phí hiện đại.
 
 ---
 **Tác giả:** Nhóm gồm 4 thành viên:
--Trần Minh Khang
--Lê Viết Huy
--Phạm Gia Huy
--Nguyễn Phi Phúc
+  Trần Minh Khang
+  Lê Viết Huy
+  Phạm Gia Huy
+  Nguyễn Phi Phúc
 
