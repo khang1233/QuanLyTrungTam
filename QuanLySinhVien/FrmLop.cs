@@ -1,6 +1,5 @@
-﻿using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.BUS;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -133,9 +132,8 @@ namespace QuanLyTrungTam
         {
             try
             {
-                // [FIX LỖI 1]: Dùng hàm GetListKyNangActive() thay vì GetListKyNang()
-                // Chỉ load những môn đang hoạt động để tránh đăng ký nhầm
-                DataTable dtMon = KyNangDAO.Instance.GetListKyNangActive();
+                // [REFACTOR] Dùng KyNangBUS
+                DataTable dtMon = KyNangBUS.Instance.GetListKyNangActive();
 
                 if (dtMon != null && dtMon.Rows.Count > 0)
                 {
@@ -152,12 +150,12 @@ namespace QuanLyTrungTam
                     cbMonHoc.DataSource = null; // Clear nếu không có môn nào
                 }
 
-                // Load Combo Phòng
-                cbPhongHoc.DataSource = PhongHocDAO.Instance.GetListPhong();
+                // [REFACTOR] Dùng PhongHocBUS
+                cbPhongHoc.DataSource = PhongHocBUS.Instance.GetListPhong();
                 cbPhongHoc.DisplayMember = "TenPhong"; cbPhongHoc.ValueMember = "MaPhong";
 
-                // Load Combo Nhân Sự
-                DataTable dtNS = NhanVienDAO.Instance.GetListNhanVien();
+                // [REFACTOR] Dùng NhanVienBUS
+                dtNS = NhanVienBUS.Instance.GetListNhanVien();
 
                 // 1. GIÁO VIÊN
                 DataView dvGV = new DataView(dtNS);
@@ -185,7 +183,8 @@ namespace QuanLyTrungTam
 
         private void LoadListLopHoc()
         {
-            DataTable dataLop = LopHocDAO.Instance.GetAllLop();
+            // [REFACTOR] Dùng LopHocBUS
+            DataTable dataLop = LopHocBUS.Instance.GetAllLop();
             if (!dataLop.Columns.Contains("NgayKetThuc"))
                 dataLop.Columns.Add("NgayKetThuc", typeof(DateTime));
 
@@ -196,7 +195,9 @@ namespace QuanLyTrungTam
                     DateTime start = Convert.ToDateTime(row["NgayBatDau"]);
                     string thu = row["Thu"].ToString();
                     int soBuoi = row["SoBuoi"] != DBNull.Value ? Convert.ToInt32(row["SoBuoi"]) : 0;
-                    row["NgayKetThuc"] = CalculateEndDate(start, thu, soBuoi);
+
+                    // [REFACTOR] Logic tính ngày chuyển sang BUS
+                    row["NgayKetThuc"] = LopHocBUS.Instance.CalculateEndDate(start, thu, soBuoi);
                 }
                 catch { row["NgayKetThuc"] = row["NgayBatDau"]; }
             }
@@ -209,46 +210,68 @@ namespace QuanLyTrungTam
             if (dgvMain.Columns.Contains("NgayKetThuc")) dgvMain.Columns["NgayKetThuc"].DefaultCellStyle.Format = "dd/MM/yyyy";
         }
 
+        // [NEW] Lưu danh sách nhân sự để lọc động
+        private DataTable dtNS;
+
         private void CbMonHoc_SelectedIndexChanged(object sender, EventArgs e)
         {
             try
             {
                 if (cbMonHoc.SelectedValue != null)
                 {
+                    DataRowView rowMon = cbMonHoc.SelectedItem as DataRowView;
                     string maMon = "";
-                    if (cbMonHoc.SelectedValue is DataRowView row) maMon = row["MaKyNang"].ToString();
-                    else maMon = cbMonHoc.SelectedValue.ToString();
-                    txbMaLop.Text = LopHocDAO.Instance.GetNewMaLop(maMon);
+                    string chuyenNganhMon = "";
+
+                    if (rowMon != null)
+                    {
+                        maMon = rowMon["MaKyNang"].ToString();
+                        // Kiểm tra cột và giá trị DBNull
+                        if (rowMon.DataView.Table.Columns.Contains("ChuyenNganh") && rowMon["ChuyenNganh"] != DBNull.Value)
+                        {
+                            chuyenNganhMon = rowMon["ChuyenNganh"].ToString().Trim();
+                        }
+                    }
+                    else
+                    {
+                        maMon = cbMonHoc.SelectedValue.ToString();
+                    }
+
+                    // [REFACTOR] Dùng LopHocBUS lấy mã lớp mới
+                    txbMaLop.Text = LopHocBUS.Instance.GetNewMaLop(maMon);
+
+                    // [NEW FEATURE] Lọc Giáo viên theo Chuyên Ngành
+                    if (dtNS != null)
+                    {
+                        DataView dvGV = new DataView(dtNS);
+
+                        // Chỉ lấy Giáo viên
+                        string filter = "LoaiNS LIKE '%Giáo%' OR LoaiNS LIKE '%Giao%'";
+
+                        // Nếu môn học có chuyên ngành -> Lọc thêm chuyên ngành
+                        if (!string.IsNullOrEmpty(chuyenNganhMon))
+                        {
+                            // Escape dấu '
+                            string safeCN = chuyenNganhMon.Replace("'", "''");
+
+                            // Sử dụng LIKE để mềm dẻo hơn (ví dụ: "Tiếng Anh" match "Tiếng Anh giao tiếp")
+                            // Hoặc dùng = nếu muốn chính xác. Ở đây dùng LIKE cho an toàn.
+                            filter += $" AND (ChuyenNganh = '{safeCN}' OR ChuyenNganh LIKE '%{safeCN}%')";
+                        }
+
+                        dvGV.RowFilter = filter;
+                        cbGiaoVien.DataSource = dvGV;
+                        cbGiaoVien.DisplayMember = "HoTen"; cbGiaoVien.ValueMember = "MaNS";
+
+                        // Debug để tìm nguyên nhân lỗi (Sẽ xóa sau khi OK)
+                        // MessageBox.Show($"Debug: Môn học '{cbMonHoc.Text}'\nChuyên ngành tìm được: '{chuyenNganhMon}'\nSố GV tìm thấy: {dvGV.Count}");
+                    }
                 }
             }
-            catch { }
-        }
-
-        private DateTime CalculateEndDate(DateTime startDate, string scheduleStr, int totalSessions)
-        {
-            if (totalSessions <= 0) return startDate;
-            List<DayOfWeek> days = new List<DayOfWeek>();
-            if (scheduleStr.Contains("T2")) days.Add(DayOfWeek.Monday);
-            if (scheduleStr.Contains("T3")) days.Add(DayOfWeek.Tuesday);
-            if (scheduleStr.Contains("T4")) days.Add(DayOfWeek.Wednesday);
-            if (scheduleStr.Contains("T5")) days.Add(DayOfWeek.Thursday);
-            if (scheduleStr.Contains("T6")) days.Add(DayOfWeek.Friday);
-            if (scheduleStr.Contains("T7")) days.Add(DayOfWeek.Saturday);
-            if (scheduleStr.Contains("CN")) days.Add(DayOfWeek.Sunday);
-
-            if (days.Count == 0) return startDate;
-            DateTime currentDate = startDate;
-            int sessionsCount = 0;
-            for (int i = 0; i < 365; i++)
+            catch (Exception ex)
             {
-                if (days.Contains(currentDate.DayOfWeek))
-                {
-                    sessionsCount++;
-                    if (sessionsCount >= totalSessions) return currentDate;
-                }
-                currentDate = currentDate.AddDays(1);
+                MessageBox.Show("Lỗi lọc giáo viên: " + ex.Message);
             }
-            return currentDate;
         }
 
         // 4. LOGIC SỰ KIỆN (BUTTONS & GRID)
@@ -273,7 +296,8 @@ namespace QuanLyTrungTam
                 }
 
                 string maGV = GetVal(cbGiaoVien);
-                string chuyenNganhGV = NhanVienDAO.Instance.GetChuyenNganh(maGV);
+                // [REFACTOR] Dùng NhanVienBUS
+                string chuyenNganhGV = NhanVienBUS.Instance.GetChuyenNganh(maGV);
 
                 if (!string.IsNullOrEmpty(chuyenNganhMon) && !string.IsNullOrEmpty(chuyenNganhGV))
                 {
@@ -292,14 +316,15 @@ namespace QuanLyTrungTam
                 }
             }
 
-            // --- KIỂM TRA LOGIC TRÙNG LỊCH ---
+            // --- KIỂM TRA LOGIC TRÙNG LỊCH (Dùng BUS Logic) ---
             string caHoc = cbCaHoc.Text;
             string lichHoc = cbThu.Text;
             string maPhong = GetVal(cbPhongHoc);
             string maGVCheck = GetVal(cbGiaoVien);
             string maTGCheck = GetVal(cbTroGiang);
 
-            string conflictMsg = LopHocDAO.Instance.GetConflictMessage(maPhong, maGVCheck, maTGCheck, lichHoc, caHoc, "");
+            // [REFACTOR] Move logic check sang BUS
+            string conflictMsg = LopHocBUS.Instance.GetConflictMessage(maPhong, maGVCheck, maTGCheck, lichHoc, caHoc, "");
 
             if (conflictMsg != null)
             {
@@ -308,7 +333,8 @@ namespace QuanLyTrungTam
             }
 
             // Insert
-            bool result = LopHocDAO.Instance.InsertLopFull(txbMaLop.Text, txbTenLop.Text,
+            // [REFACTOR] Dùng LopHocBUS
+            bool result = LopHocBUS.Instance.InsertLopFull(txbMaLop.Text, txbTenLop.Text,
                 GetVal(cbMonHoc), maGVCheck, maTGCheck, maPhong,
                 lichHoc, caHoc, (int)nmSiSo.Value, DateTime.Now);
 
@@ -325,10 +351,11 @@ namespace QuanLyTrungTam
         {
             if (string.IsNullOrEmpty(txbMaLop.Text)) return;
 
-            string conflictMsg = LopHocDAO.Instance.GetConflictMessage(GetVal(cbPhongHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), cbThu.Text, cbCaHoc.Text, txbMaLop.Text);
+            // [REFACTOR] Dùng LopHocBUS
+            string conflictMsg = LopHocBUS.Instance.GetConflictMessage(GetVal(cbPhongHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), cbThu.Text, cbCaHoc.Text, txbMaLop.Text);
             if (conflictMsg != null) { MessageBox.Show(conflictMsg, "Cảnh báo trùng lịch", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
-            bool result = LopHocDAO.Instance.UpdateLopFull(txbMaLop.Text, txbTenLop.Text,
+            bool result = LopHocBUS.Instance.UpdateLopFull(txbMaLop.Text, txbTenLop.Text,
                 GetVal(cbGiaoVien), GetVal(cbTroGiang), GetVal(cbPhongHoc),
                 cbThu.Text, cbCaHoc.Text, (int)nmSiSo.Value, cbTrangThai.Text);
 
@@ -341,7 +368,8 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(txbMaLop.Text)) return;
             if (MessageBox.Show("Xóa lớp sẽ xóa hết đăng ký. Tiếp tục?", "Cảnh báo", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                if (LopHocDAO.Instance.DeleteLop(txbMaLop.Text)) { MessageBox.Show("Đã xóa."); LoadListLopHoc(); ResetForm(); }
+                // [REFACTOR] Dùng LopHocBUS
+                if (LopHocBUS.Instance.DeleteLop(txbMaLop.Text)) { MessageBox.Show("Đã xóa."); LoadListLopHoc(); ResetForm(); }
                 else MessageBox.Show("Lỗi xóa lớp.");
             }
         }

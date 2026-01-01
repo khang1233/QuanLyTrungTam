@@ -1,4 +1,4 @@
-﻿using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.BUS; // [REFACTOR]
 using QuanLyTrungTam.DTO;
 using QuanLyTrungTam.Utilities;
 using System;
@@ -70,7 +70,8 @@ namespace QuanLyTrungTam
             }
 
             // 5. Cập nhật vào Database
-            if (AccountDAO.Instance.UpdatePassword(userName, passwordNew))
+            // [REFACTOR] Dùng AccountBUS
+            if (AccountBUS.Instance.UpdatePassword(userName, passwordNew))
             {
                 MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
 

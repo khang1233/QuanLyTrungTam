@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
 using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.DTO; // Thêm DTO để dùng class Account
 
 namespace QuanLyTrungTam
@@ -141,14 +142,15 @@ namespace QuanLyTrungTam
         private void LoadAllData()
         {
             // 1. Thông tin cá nhân
-            DataRow r = HocVienDAO.Instance.GetInfoHocVien(currentMaHV);
+            // [REFACTOR] Dùng HocVienBUS
+            DataRow r = HocVienBUS.Instance.GetInfoHocVien(currentMaHV);
             if (r != null)
             {
                 lblWelcome.Text = $"Xin chào học viên: {r["HoTen"].ToString().ToUpper()} ({currentMaHV})";
 
-                decimal tongHP = TuitionDAO.Instance.GetTongNo(currentMaHV);
-                decimal daDong = TuitionDAO.Instance.GetDaDong(currentMaHV);
-                decimal conNo = tongHP - daDong;
+                // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
+                HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(currentMaHV);
+                decimal conNo = info.ConNo;
 
                 if (conNo > 0)
                 {
@@ -163,7 +165,10 @@ namespace QuanLyTrungTam
             }
 
             // 2. Lịch học
-            DataTable dtSch = TuitionDAO.Instance.GetListDangKy(currentMaHV);
+            // [REFACTOR] Dùng LopHocBUS (thay vì TuitionBUS.GetListDangKy? No, TuitionBUS was wrapping TuitionDAO.GetListDangKy. Wait, LopHocBUS has GetScheduleByHocVien?)
+            // TuitionDAO.GetListDangKy returns schedule too. Let's check which BUS to use.
+            // In step 62 I added GetListDangKy to TuitionBUS. So use TuitionBUS.
+            DataTable dtSch = TuitionBUS.Instance.GetListDangKy(currentMaHV);
             dgvSchedule.DataSource = dtSch;
             SetHeader(dgvSchedule, "TenLop", "Lớp Học");
             SetHeader(dgvSchedule, "TenKyNang", "Môn Học");
@@ -172,7 +177,8 @@ namespace QuanLyTrungTam
             HideCol(dgvSchedule, "MaLop", "HocPhiLop", "NgayDangKy", "MaHV");
 
             // 3. Điểm số
-            DataTable dtGrade = DiemDAO.Instance.GetBangDiemCaNhan(currentMaHV);
+            // [REFACTOR] Dùng DiemBUS
+            DataTable dtGrade = DiemBUS.Instance.GetBangDiemCaNhan(currentMaHV);
             dgvGrades.DataSource = dtGrade;
             SetHeader(dgvGrades, "TenLop", "Lớp Học");
             SetHeader(dgvGrades, "MonHoc", "Môn Học");
@@ -202,19 +208,12 @@ namespace QuanLyTrungTam
 
         private void BtnChangePass_Click(object sender, EventArgs e)
         {
-            // Lấy thông tin Account hiện tại dựa vào MaHV (vì đây là form của HV)
-            // Lưu ý: Cần đảm bảo cột TenDangNhap trong bảng TaiKhoan khớp với MaHV của học viên
-            // Hoặc dùng AccountDAO để tìm theo MaNguoiDung = currentMaHV
+            // [REFACTOR] Dùng AccountBUS
+            Account acc = AccountBUS.Instance.GetAccountByUserName(currentMaHV);
 
-            // Giả sử TenDangNhap = MaHV (logic thường thấy)
-            // Nếu hệ thống bạn cho phép tên đăng nhập tùy ý, cần tìm lại Account từ Database
-            Account acc = AccountDAO.Instance.GetAccountByUserName(currentMaHV);
-
-            // Nếu không tìm thấy theo username, thử tìm theo MaNguoiDung (cách an toàn hơn)
             if (acc == null)
             {
-                // Bạn cần thêm hàm GetAccountByUserID vào AccountDAO nếu chưa có
-                // Hoặc tạm thời dùng currentMaHV làm tên đăng nhập nếu chắc chắn
+                // Logic giả lập nếu chưa có TK
                 acc = new Account
                 {
                     TenDangNhap = currentMaHV,
@@ -223,7 +222,6 @@ namespace QuanLyTrungTam
                     MaNguoiDung = currentMaHV,
                     TrangThai = "Hoạt động"
                 };
-                // Dòng trên chỉ là giả lập nếu chưa lấy đc DB, tốt nhất nên query DB
             }
 
             if (acc != null)

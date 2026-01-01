@@ -19,7 +19,8 @@ namespace QuanLyTrungTam.DAO
         // --- CẤU HÌNH CHUỖI KẾT NỐI ---
         // QUAN TRỌNG: Bạn phải sửa "Data Source" thành tên máy tính của bạn
         // Ví dụ: DESKTOP-ABC\SQLEXPRESS hoặc dấu chấm (.) nếu là bản Full
-        private string connectionSTR = @"Data Source=.\SQLEXPRESS;Initial Catalog=QuanLyTrungTam;Integrated Security=True;Encrypt=False";
+        private string connectionSTR = @"Data Source=(LocalDB)\MSSQLLocalDB;Initial Catalog=QuanLyTrungTam;Integrated Security=True";
+
 
         public DataTable ExecuteQuery(string query, object[] parameter = null)
         {

@@ -71,6 +71,17 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BUS\AccountBUS.cs" />
+    <Compile Include="BUS\DashboardBUS.cs" />
+    <Compile Include="BUS\DiemBUS.cs" />
+    <Compile Include="BUS\DiemDanhBUS.cs" />
+    <Compile Include="BUS\FinanceBUS.cs" />
+    <Compile Include="BUS\HocVienBUS.cs" />
+    <Compile Include="BUS\KyNangBUS.cs" />
+    <Compile Include="BUS\LopHocBUS.cs" />
+    <Compile Include="BUS\NhanVienBUS.cs" />
+    <Compile Include="BUS\PhongHocBUS.cs" />
+    <Compile Include="BUS\TuitionBUS.cs" />
     <Compile Include="DAO\AccountDAO.cs" />
     <Compile Include="DAO\DashboardDAO.cs" />
     <Compile Include="DAO\Database.cs" />
@@ -141,6 +152,9 @@
     <Compile Include="FrmDiemDanh.Designer.cs">
       <DependentUpon>FrmDiemDanh.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmHelp.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FrmHocPhi.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -207,12 +221,7 @@
     <Compile Include="FrmTraCuuHocPhi.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="PhanQuyen.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="PhanQuyen.Designer.cs">
-      <DependentUpon>PhanQuyen.cs</DependentUpon>
-    </Compile>
+    <Compile Include="obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="fChangePassword.resx">
@@ -230,6 +239,11 @@
     <EmbeddedResource Include="FrmHocPhi.resx">
       <DependentUpon>FrmHocPhi.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="obj\Debug\QuanLyTrungTam.fChangePassword.resources" />
+    <EmbeddedResource Include="obj\Debug\QuanLyTrungTam.fMain.resources" />
+    <EmbeddedResource Include="obj\Debug\QuanLyTrungTam.Form1.resources" />
+    <EmbeddedResource Include="obj\Debug\QuanLyTrungTam.HocPhi.resources" />
+    <EmbeddedResource Include="obj\Debug\QuanLyTrungTam.Properties.Resources.resources" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -240,7 +254,16 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="bin\Debug\QuanLyTrungTam.exe.config" />
+    <None Include="obj\Debug\DesignTimeResolveAssemblyReferencesInput.cache" />
+    <None Include="obj\Debug\QuanLyTr.50B02166.Up2Date" />
+    <None Include="obj\Debug\QuanLyTrungTam.csproj.AssemblyReference.cache" />
+    <None Include="obj\Debug\QuanLyTrungTam.csproj.CoreCompileInputs.cache" />
+    <None Include="obj\Debug\QuanLyTrungTam.csproj.GenerateResource.cache" />
+    <None Include="obj\Debug\QuanLyTrungTam.exe.config" />
     <None Include="packages.config" />
+    <None Include="project-source-full.docx" />
+    <None Include="project-source.docx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -255,7 +278,26 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="BUS\" />
+    <Content Include="bin\Debug\Google.Apis.Auth.dll" />
+    <Content Include="bin\Debug\Google.Apis.Auth.pdb" />
+    <Content Include="bin\Debug\Google.Apis.Auth.xml" />
+    <Content Include="bin\Debug\Google.Apis.Core.dll" />
+    <Content Include="bin\Debug\Google.Apis.Core.pdb" />
+    <Content Include="bin\Debug\Google.Apis.Core.xml" />
+    <Content Include="bin\Debug\Google.Apis.dll" />
+    <Content Include="bin\Debug\Google.Apis.pdb" />
+    <Content Include="bin\Debug\Google.Apis.xml" />
+    <Content Include="bin\Debug\Newtonsoft.Json.dll" />
+    <Content Include="bin\Debug\Newtonsoft.Json.xml" />
+    <Content Include="bin\Debug\QuanLyTrungTam.exe" />
+    <Content Include="bin\Debug\QuanLyTrungTam.pdb" />
+    <Content Include="obj\Debug\QuanLyTrungTam.csproj.FileListAbsolute.txt" />
+    <Content Include="obj\Debug\QuanLyTrungTam.exe" />
+    <Content Include="obj\Debug\QuanLyTrungTam.pdb" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bin\Release\" />
+    <Folder Include="obj\Debug\TempPE\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

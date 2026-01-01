@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS; // [REFACTOR]
+using QuanLyTrungTam.DAO; // Keep for now if DTO/DAO usage elsewhere? Ideally remove if possible. But wait, AccountBUS is in BUS.
+                           // Helper DTOs might be used? No, just DataTables.
 
 namespace QuanLyTrungTam
 {
@@ -64,8 +66,9 @@ namespace QuanLyTrungTam
 
         private void LoadData()
         {
-            dgvAccounts.DataSource = AccountDAO.Instance.GetListAccount();
-            dgvLogs.DataSource = AccountDAO.Instance.GetLoginHistory();
+            // [REFACTOR] Dùng AccountBUS
+            dgvAccounts.DataSource = AccountBUS.Instance.GetListAccount();
+            dgvLogs.DataSource = AccountBUS.Instance.GetLoginHistory();
 
             // Việt hóa tiêu đề cột cho đẹp
             if (dgvAccounts.Columns.Contains("TenDangNhap")) dgvAccounts.Columns["TenDangNhap"].HeaderText = "Tài khoản";
@@ -86,8 +89,18 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            bool currentStatus = (bool)dgvAccounts.CurrentRow.Cells["TrangThai"].Value;
-            AccountDAO.Instance.UpdateStatus(user, currentStatus ? 0 : 1);
+            // Check if column is boolean or int
+            var val = dgvAccounts.CurrentRow.Cells["TrangThai"].Value;
+            bool currentStatus = false;
+            if (val is bool b) currentStatus = b;
+            else if (val is int i) currentStatus = (i == 1);
+            else if (val.ToString() == "1" || val.ToString().ToLower() == "true" || val.ToString() == "Hoạt động") currentStatus = true;
+
+            // [REFACTOR] Dùng AccountBUS
+            // AccountBUS.UpdateStatus accepts (string, int) or (string, bool).
+            // Logic cũ: UpdateStatus(user, currentStatus ? 0 : 1) -> Passing Int.
+            // Let's use the Int overload if BUS has it. BUS has UpdateStatus(string, int).
+            AccountBUS.Instance.UpdateStatus(user, currentStatus ? 0 : 1);
             LoadData();
         }
 
@@ -98,7 +111,8 @@ namespace QuanLyTrungTam
 
             if (MessageBox.Show($"Bạn có muốn reset mật khẩu của {user} về 123?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                AccountDAO.Instance.ResetPass(user);
+                // [REFACTOR] Dùng AccountBUS
+                AccountBUS.Instance.ResetPass(user);
                 MessageBox.Show("Đã Reset thành công!");
                 LoadData();
             }

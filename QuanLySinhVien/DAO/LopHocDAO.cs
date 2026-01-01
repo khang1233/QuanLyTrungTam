@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Collections.Generic; // Cần cho List
-using System.Linq; // Cần cho Intersect (so sánh mảng)
-using QuanLyTrungTam.Utilities;
+using System.Collections.Generic;
 
 namespace QuanLyTrungTam.DAO
 {
@@ -17,102 +15,19 @@ namespace QuanLyTrungTam.DAO
         private LopHocDAO() { }
 
         // =============================================================
-        // 1. LOGIC XỬ LÝ CHUỖI NGÀY & KIỂM TRA TRÙNG (CORE LOGIC)
+        // 1. DATA ACCESS ONLY (Logic has been moved to BUS)
         // =============================================================
 
-        /// <summary>
-        /// Hàm tách chuỗi ngày phức tạp thành danh sách đơn giản.
-        /// VD: "T3 (Thứ Ba)" -> {"T3"}
-        /// VD: "T3-T5-T7" -> {"T3", "T5", "T7"}
-        /// </summary>
-        private List<string> PhanTichNgayHoc(string chuoiThu)
+        // Hỗ trợ BUS check trùng lịch: Lấy danh sách lớp theo Ca Học
+        public DataTable GetClassesByCa(string caInput, string excludeMaLop)
         {
-            List<string> result = new List<string>();
-            if (string.IsNullOrEmpty(chuoiThu)) return result;
-
-            // 1. Loại bỏ phần chú thích trong ngoặc đơn (nếu có)
-            string raw = chuoiThu;
-            if (raw.Contains("(")) raw = raw.Split('(')[0];
-
-            // 2. Tách theo dấu gạch ngang hoặc dấu phẩy
-            string[] parts = raw.Split(new char[] { '-', ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var part in parts)
-            {
-                string cleanPart = part.Trim().ToUpper();
-                if (!string.IsNullOrEmpty(cleanPart)) result.Add(cleanPart);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Kiểm tra xem 2 chuỗi thứ có ngày nào trùng nhau không.
-        /// </summary>
-        private bool CheckTrungThu(string thuInput, string thuDb)
-        {
-            var listInput = PhanTichNgayHoc(thuInput);
-            var listDb = PhanTichNgayHoc(thuDb);
-            // Nếu có ít nhất 1 phần tử chung -> Trùng
-            return listInput.Intersect(listDb).Any();
-        }
-
-        /// <summary>
-        /// [QUAN TRỌNG] Hàm trả về THÔNG BÁO LỖI CỤ THỂ (String) thay vì True/False
-        /// Trả về null nếu không có lỗi.
-        /// </summary>
-        public string GetConflictMessage(string maPhong, string maGV, string maTG, string thuInput, string caInput, string maLopHienTai = "")
-        {
-            // Bước 1: Lấy tất cả các lớp đang hoạt động trong cùng Ca học
             string query = @"SELECT MaLop, TenLop, Thu, MaPhong, MaGiaoVien, MaTroGiang 
                              FROM LopHoc 
                              WHERE CaHoc = @ca 
                              AND TrangThai != N'Đã kết thúc' 
                              AND MaLop != @maLop";
 
-            DataTable dt = DataProvider.Instance.ExecuteQuery(query, new object[] { caInput, maLopHienTai });
-
-            // Bước 2: Duyệt từng lớp để so sánh logic
-            foreach (DataRow row in dt.Rows)
-            {
-                string dbThu = row["Thu"].ToString();
-
-                // Nếu ngày không trùng thì bỏ qua (VD: T2 so với T3-T5)
-                if (!CheckTrungThu(thuInput, dbThu)) continue;
-
-                // --- NẾU ĐÃ TRÙNG NGÀY + TRÙNG CA THÌ KIỂM TRA ĐỐI TƯỢNG ---
-                string lopGayTrung = $"{row["TenLop"]} ({row["MaLop"]})";
-                string dbPhong = row["MaPhong"].ToString();
-                string dbGV = row["MaGiaoVien"].ToString();
-                string dbTG = row["MaTroGiang"].ToString();
-
-                // 1. Check Trùng Phòng
-                if (!string.IsNullOrEmpty(maPhong) && maPhong == dbPhong)
-                {
-                    return $"Phòng '{maPhong}' bị trùng lịch với lớp: {lopGayTrung}.";
-                }
-
-                // 2. Check Trùng Giáo Viên (So với cả GV và TG của lớp kia)
-                if (!string.IsNullOrEmpty(maGV))
-                {
-                    if (maGV == dbGV) return $"Giảng viên đã có lịch dạy lớp: {lopGayTrung}.";
-                    if (maGV == dbTG) return $"Giảng viên đang làm trợ giảng cho lớp: {lopGayTrung}.";
-                }
-
-                // 3. Check Trùng Trợ Giảng
-                if (!string.IsNullOrEmpty(maTG))
-                {
-                    if (maTG == dbGV) return $"Trợ giảng đang là GV chính của lớp: {lopGayTrung}.";
-                    if (maTG == dbTG) return $"Trợ giảng đã có lịch tại lớp: {lopGayTrung}.";
-                }
-            }
-
-            // Kiểm tra nội bộ: GV và TG không được là 1 người
-            if (!string.IsNullOrEmpty(maGV) && !string.IsNullOrEmpty(maTG) && maGV == maTG)
-            {
-                return "Giáo viên và Trợ giảng không thể là cùng một người!";
-            }
-
-            return null; // Không có lỗi
+            return DataProvider.Instance.ExecuteQuery(query, new object[] { caInput, excludeMaLop });
         }
 
         // =============================================================
@@ -155,7 +70,6 @@ namespace QuanLyTrungTam.DAO
 
         public bool InsertLopFull(string maLop, string tenLop, string maKN, string maGV, string maTG, string maPhong, string thu, string ca, int siSo, DateTime ngayBD)
         {
-            // Lưu ý: Việc check trùng đã được thực hiện ở Form trước khi gọi hàm này
             string query = @"INSERT INTO LopHoc (MaLop, TenLop, MaKyNang, MaGiaoVien, MaTroGiang, MaPhong, Thu, CaHoc, SiSoToiDa, NgayBatDau, TrangThai)
                              VALUES ( @maL , @tenL , @maKN , @maGV , @tg , @ph , @thu , @ca , @si , @ngay , N'Đang tuyển sinh')";
 
@@ -168,7 +82,6 @@ namespace QuanLyTrungTam.DAO
 
         public bool UpdateLopFull(string maLop, string tenLop, string maGV, string maTG, string maPhong, string thu, string ca, int siSo, string trangThai)
         {
-            // Lưu ý: Việc check trùng đã được thực hiện ở Form trước khi gọi hàm này
             string query = @"UPDATE LopHoc SET 
                                 TenLop = @t, 
                                 MaGiaoVien = @g, 

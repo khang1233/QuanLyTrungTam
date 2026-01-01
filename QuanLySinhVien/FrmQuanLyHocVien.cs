@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
 using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.DTO;
 using System.Linq;
 
@@ -132,7 +133,7 @@ namespace QuanLyTrungTam
         // Tải danh sách học viên lên Grid
         void LoadData()
         {
-            ui_dgvHocVien.DataSource = HocVienDAO.Instance.GetListHocVien();
+            ui_dgvHocVien.DataSource = HocVienBUS.Instance.GetListHocVien();
 
             // Đăng ký lại sự kiện CellClick để tránh bị double event
             ui_dgvHocVien.CellClick -= DgvHocVien_CellClick;
@@ -177,7 +178,7 @@ namespace QuanLyTrungTam
         private void ResetForm()
         {
             currentMaHV = "";
-            ui_txbMa.Text = HocVienDAO.Instance.GetNewMaHV();
+            ui_txbMa.Text = HocVienBUS.Instance.GetNewMaHV();
             ui_txbTen.Clear();
             ui_txbSDT.Clear();
             ui_txbEmail.Clear();
@@ -193,8 +194,8 @@ namespace QuanLyTrungTam
         // 1. Thêm Học Viên
         private void BtnThem_Click(object sender, EventArgs e)
         {
-            string ma = HocVienDAO.Instance.GetNewMaHV();
-            if (HocVienDAO.Instance.InsertHocVien(ma, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
+            string ma = HocVienBUS.Instance.GetNewMaHV();
+            if (HocVienBUS.Instance.InsertHocVien(ma, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
             {
                 MessageBox.Show("Thêm học viên thành công!");
                 LoadData();
@@ -212,10 +213,10 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(currentMaHV)) return;
 
             // Cập nhật thông tin
-            if (HocVienDAO.Instance.UpdateHocVien(currentMaHV, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
+            if (HocVienBUS.Instance.UpdateHocVien(currentMaHV, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
             {
                 // Nếu trạng thái là Bỏ học -> Khóa tài khoản
-                AccountDAO.Instance.LockAccountByUserID(currentMaHV, (ui_cbTrangThai.Text == "Bỏ học"));
+                AccountBUS.Instance.LockAccountByUserID(currentMaHV, (ui_cbTrangThai.Text == "Bỏ học"));
 
                 MessageBox.Show("Cập nhật thông tin thành công!");
                 LoadData();
@@ -243,8 +244,8 @@ namespace QuanLyTrungTam
 
             if (MessageBox.Show(msg, "Xác nhận xóa dữ liệu", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
             {
-                // Gọi DAO để xóa (DAO gọi thủ tục USP_XoaHocVien)
-                if (HocVienDAO.Instance.DeleteHocVien(currentMaHV))
+                // Gọi BUS để xóa
+                if (HocVienBUS.Instance.DeleteHocVien(currentMaHV))
                 {
                     MessageBox.Show("Đã xóa học viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();   // Tải lại danh sách
@@ -267,7 +268,7 @@ namespace QuanLyTrungTam
             }
 
             // Mặc định pass là 123, Loại TK là HocVien
-            if (AccountDAO.Instance.InsertAccount(currentMaHV, "123", "HocVien", currentMaHV))
+            if (AccountBUS.Instance.InsertAccount(currentMaHV, "123", "HocVien", currentMaHV))
             {
                 MessageBox.Show("Đã cấp tài khoản thành công!\nTên đăng nhập: " + currentMaHV + "\nMật khẩu: 123");
             }

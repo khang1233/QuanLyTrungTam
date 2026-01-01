@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Drawing;
-using System.Drawing.Printing; // <--- 1. QUAN TRỌNG: Thêm thư viện này
+using System.Drawing.Printing; 
 using System.Data;
 using System.Windows.Forms;
 using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
 
 namespace QuanLyTrungTam
 {
@@ -148,7 +149,8 @@ namespace QuanLyTrungTam
 
         void LoadSearchData(string keyword)
         {
-            DataTable dt = HocVienDAO.Instance.GetListHocVien();
+            // [REFACTOR] Dùng HocVienBUS
+            DataTable dt = HocVienBUS.Instance.GetListHocVien();
             if (dt == null) return;
 
             if (!dt.Columns.Contains("TrangThaiHocPhi"))
@@ -157,10 +159,11 @@ namespace QuanLyTrungTam
             foreach (DataRow row in dt.Rows)
             {
                 string maHV = row["MaHV"].ToString();
-                decimal tongNo = TuitionDAO.Instance.GetTongNo(maHV);
-                decimal daDong = TuitionDAO.Instance.GetDaDong(maHV);
-                decimal conNo = tongNo - daDong;
-                row["TrangThaiHocPhi"] = conNo > 0 ? "Còn nợ" : "Hoàn thành";
+                
+                // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
+                HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(maHV);
+                
+                row["TrangThaiHocPhi"] = info.ConNo > 0 ? "Còn nợ" : "Hoàn thành";
             }
 
             if (!string.IsNullOrEmpty(keyword) && keyword != "🔍 Nhập tên hoặc mã học viên...")
@@ -195,7 +198,8 @@ namespace QuanLyTrungTam
                 currentMaHV = row.Cells["MaHV"].Value.ToString();
                 string tenHV = row.Cells["HoTen"].Value.ToString();
 
-                DataTable dtLop = TuitionDAO.Instance.GetListDangKy(currentMaHV);
+                // [REFACTOR] Dùng TuitionBUS
+                DataTable dtLop = TuitionBUS.Instance.GetListDangKy(currentMaHV);
                 dgvLopHoc.DataSource = dtLop;
 
                 SafeSetHeader(dgvLopHoc, "TenKyNang", "Môn Học");
@@ -211,17 +215,16 @@ namespace QuanLyTrungTam
 
         void UpdateFinanceInfo(string tenHV)
         {
-            decimal tongNo = TuitionDAO.Instance.GetTongNo(currentMaHV);
-            decimal daDong = TuitionDAO.Instance.GetDaDong(currentMaHV);
-            decimal conNo = tongNo - daDong;
+            // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
+            HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(currentMaHV);
 
             lblTaiChinh.Text = $"Học Viên: {tenHV.ToUpper()}\n\n" +
-                               $"Tổng Học Phí: {tongNo:N0} đ\n" +
-                               $"Đã Đóng:      {daDong:N0} đ\n" +
+                               $"Tổng Học Phí: {info.TongNo:N0} đ\n" +
+                               $"Đã Đóng:      {info.DaDong:N0} đ\n" +
                                $"--------------------------\n" +
-                               $"CÒN NỢ:       {conNo:N0} VNĐ";
+                               $"CÒN NỢ:       {info.ConNo:N0} VNĐ";
 
-            lblTaiChinh.ForeColor = conNo > 0 ? Color.Red : Color.Green;
+            lblTaiChinh.ForeColor = info.ConNo > 0 ? Color.Red : Color.Green;
             txbDongTien.Clear();
             txbDongTien.Focus();
         }
@@ -242,9 +245,9 @@ namespace QuanLyTrungTam
 
             if (decimal.TryParse(inputTien, out decimal soTien) && soTien > 0)
             {
-                decimal tongNo = TuitionDAO.Instance.GetTongNo(currentMaHV);
-                decimal daDong = TuitionDAO.Instance.GetDaDong(currentMaHV);
-                decimal conNo = tongNo - daDong;
+                // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
+                HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(currentMaHV);
+                decimal conNo = info.ConNo;
 
                 if (conNo <= 0)
                 {
@@ -263,8 +266,8 @@ namespace QuanLyTrungTam
                 {
                     string noiDungThu = "Thu tại quầy";
 
-                    // Lưu vào DB
-                    if (TuitionDAO.Instance.InsertThanhToan(currentMaHV, soTien, noiDungThu))
+                    // Lưu vào DB ([REFACTOR] Dùng TuitionBUS)
+                    if (TuitionBUS.Instance.InsertThanhToan(currentMaHV, soTien, noiDungThu))
                     {
                         MessageBox.Show(" ✅  Thu tiền thành công!");
 

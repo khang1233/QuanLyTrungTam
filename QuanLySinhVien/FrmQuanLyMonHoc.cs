@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
-using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS; // [REFACTOR]
 using QuanLyTrungTam.DTO;
 
 namespace QuanLyTrungTam
@@ -10,8 +10,8 @@ namespace QuanLyTrungTam
     public partial class FrmQuanLyMonHoc : Form
     {
         // Control
-        private TextBox txbMa, txbTen, txbMoTa, txbSearch; // [MỚI] Thêm txbSearch
-        private Button btnSearch; // [MỚI] Thêm nút Tìm
+        private TextBox txbMa, txbTen, txbMoTa, txbSearch; 
+        private Button btnSearch; 
         private ComboBox cbHinhThuc, cbTrangThai;
         private NumericUpDown numSoBuoi, numDonGia;
         private Label lblTongHocPhi;
@@ -46,7 +46,7 @@ namespace QuanLyTrungTam
             txbMa = new TextBox { ReadOnly = false, BackColor = Color.LightYellow };
             txbTen = new TextBox(); txbMoTa = new TextBox();
             txbSearch = new TextBox();
-            SetPlaceholder(txbSearch, "Nhập tên môn cần tìm..."); // <--- HÀM TỰ VIẾT ĐỂ TẠO CHỮ MỜ
+            SetPlaceholder(txbSearch, "Nhập tên môn cần tìm..."); 
 
             cbHinhThuc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
             cbHinhThuc.Items.AddRange(new string[] { "Offline", "Online", "Video Record" });
@@ -81,12 +81,12 @@ namespace QuanLyTrungTam
 
             // [MỚI] Dòng Tìm Kiếm (Nằm dưới Mô Tả)
             AddInput(pnlInput, "Tìm Kiếm:", txbSearch, 30, 190);
-            txbSearch.Width = 300; // Ô tìm kiếm dài vừa phải
+            txbSearch.Width = 300; 
 
             // [MỚI] Nút Kính Lúp (Bên cạnh ô tìm kiếm)
             btnSearch = new Button { Text = "🔍", Location = new Point(440, 187), Size = new Size(50, 30), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
-            btnSearch.Click += (s, e) => FilterData(txbSearch.Text); // Sự kiện tìm
-            txbSearch.TextChanged += (s, e) => FilterData(txbSearch.Text); // Tìm ngay khi gõ
+            btnSearch.Click += (s, e) => FilterData(txbSearch.Text); 
+            txbSearch.TextChanged += (s, e) => FilterData(txbSearch.Text); 
             pnlInput.Controls.Add(btnSearch);
 
             // Cột 3 (Trạng Thái & Nút chức năng)
@@ -127,7 +127,6 @@ namespace QuanLyTrungTam
         // 2. LOGIC TÌM KIẾM & XỬ LÝ
         // =========================================================================
 
-        // [MỚI] Hàm lọc dữ liệu trên GridView
         private void FilterData(string keyword)
         {
             DataTable dt = dgvMonHoc.DataSource as DataTable;
@@ -153,7 +152,8 @@ namespace QuanLyTrungTam
 
         void LoadData()
         {
-            dgvMonHoc.DataSource = KyNangDAO.Instance.GetListKyNang();
+            // [REFACTOR] Dùng KyNangBUS
+            dgvMonHoc.DataSource = KyNangBUS.Instance.GetListKyNang();
 
             if (dgvMonHoc.Columns.Contains("TrangThai") && dgvMonHoc.Columns["TrangThai"] is DataGridViewCheckBoxColumn)
             {
@@ -232,7 +232,8 @@ namespace QuanLyTrungTam
 
             string status = cbTrangThai.SelectedIndex == 0 ? "1" : "0";
 
-            if (KyNangDAO.Instance.InsertKyNang(
+            // [REFACTOR] Dùng KyNangBUS
+            if (KyNangBUS.Instance.InsertKyNang(
                 txbMa.Text.Trim().ToUpper(),
                 txbTen.Text,
                 cbHinhThuc.Text,
@@ -254,7 +255,8 @@ namespace QuanLyTrungTam
 
             try
             {
-                if (KyNangDAO.Instance.UpdateKyNang(
+                // [REFACTOR] Dùng KyNangBUS
+                if (KyNangBUS.Instance.UpdateKyNang(
                     curMaKN,
                     txbTen.Text,
                     cbHinhThuc.Text,
@@ -276,7 +278,8 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(curMaKN)) return;
             if (MessageBox.Show($"Xóa môn {txbTen.Text}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                if (KyNangDAO.Instance.DeleteKyNang(curMaKN)) { MessageBox.Show("Đã xóa."); LoadData(); ResetForm(); }
+                // [REFACTOR] Dùng KyNangBUS
+                if (KyNangBUS.Instance.DeleteKyNang(curMaKN)) { MessageBox.Show("Đã xóa."); LoadData(); ResetForm(); }
                 else MessageBox.Show("Không thể xóa (đang được sử dụng).");
             }
         }

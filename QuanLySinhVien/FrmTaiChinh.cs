@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
-using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS; // [REFACTOR]
 
 namespace QuanLyTrungTam
 {
@@ -153,13 +153,13 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            // 1. Lấy danh sách giao dịch từ FinanceDAO
-            DataTable dt = FinanceDAO.Instance.GetHistoryByDate(from, to);
+            // [REFACTOR] Dùng FinanceBUS
+            DataTable dt = FinanceBUS.Instance.GetHistoryByDate(from, to);
             dgvHistory.DataSource = dt;
             FormatGrid();
 
-            // 2. Tính tổng doanh thu từ FinanceDAO
-            decimal totalRevenue = FinanceDAO.Instance.GetRevenueByDate(from, to);
+            // 2. Tính tổng doanh thu từ FinanceBUS
+            decimal totalRevenue = FinanceBUS.Instance.GetRevenueByDate(from, to);
             lblTongTien.Text = string.Format("{0:N0} VNĐ", totalRevenue);
         }
 

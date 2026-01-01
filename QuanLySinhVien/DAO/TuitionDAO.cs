@@ -84,7 +84,7 @@ namespace QuanLyTrungTam.DAO
                 // Gọi thủ tục SQL vừa tạo ở Bước 1
                 try
                 {
-                    DataProvider.Instance.ExecuteNonQuery("EXEC USP_TuDongCapNhatTrangThai");
+                    DataProvider.Instance.ExecuteNonQuery("EXEC USP_TuDongCapNhatTrangThai @MaHV", new object[] { maHV });
                 }
                 catch
                 {
@@ -103,7 +103,7 @@ namespace QuanLyTrungTam.DAO
             // [UPDATE MỚI] GỌI THỦ TỤC TỰ ĐỘNG CẬP NHẬT TRẠNG THÁI (Nếu hủy hết lớp sẽ về Nhập học)
             if (success)
             {
-                DataProvider.Instance.ExecuteNonQuery("EXEC USP_TuDongCapNhatTrangThai");
+                DataProvider.Instance.ExecuteNonQuery("EXEC USP_TuDongCapNhatTrangThai @MaHV", new object[] { maHV });
             }
 
             return success;

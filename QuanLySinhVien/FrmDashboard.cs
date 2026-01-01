@@ -1,4 +1,4 @@
-﻿using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.BUS;
 using System;
 using System.Data;
 using System.Drawing;
@@ -111,17 +111,18 @@ namespace QuanLyTrungTam
             Cursor = Cursors.WaitCursor;
             try
             {
-                // 1. Load các con số thống kê
-                UpdateLabel("lblHocVien", DashboardDAO.Instance.GetSoLuongHocVien().ToString("N0"));
-                UpdateLabel("lblLoiNhuan", DashboardDAO.Instance.GetLoiNhuan().ToString("N0"));
-                UpdateLabel("lblLopHoc", DashboardDAO.Instance.GetSoLuongLopHoc().ToString("N0"));
-                UpdateLabel("lblMonHoc", DashboardDAO.Instance.GetSoLuongMon().ToString("N0"));
+                // [REFACTOR] Dùng DashboardBUS
+                
+                UpdateLabel("lblHocVien", DashboardBUS.Instance.GetSoLuongHocVien().ToString("N0"));
+                UpdateLabel("lblLoiNhuan", DashboardBUS.Instance.GetLoiNhuan().ToString("N0"));
+                UpdateLabel("lblLopHoc", DashboardBUS.Instance.GetSoLuongLopHoc().ToString("N0"));
+                UpdateLabel("lblMonHoc", DashboardBUS.Instance.GetSoLuongMon().ToString("N0"));
 
-                UpdateLabel("lblNoPhi", DashboardDAO.Instance.GetSoLuongNoPhi().ToString("N0"));
-                UpdateLabel("lblLopVang", DashboardDAO.Instance.GetSoLopChuaDu().ToString("N0")); // Lớp đang tuyển sinh
+                UpdateLabel("lblNoPhi", DashboardBUS.Instance.GetSoLuongNoPhi().ToString("N0"));
+                UpdateLabel("lblLopVang", DashboardBUS.Instance.GetSoLopChuaDu().ToString("N0")); // Lớp đang tuyển sinh
 
-                int gv = DashboardDAO.Instance.GetSoLuongGiaoVien();
-                int tg = DashboardDAO.Instance.GetSoLuongTroGiang();
+                int gv = DashboardBUS.Instance.GetSoLuongGiaoVien();
+                int tg = DashboardBUS.Instance.GetSoLuongTroGiang();
                 UpdateLabel("lblGiaoVien", gv.ToString("N0"));
                 UpdateLabel("lblTroGiang", tg.ToString("N0"));
 
@@ -130,7 +131,8 @@ namespace QuanLyTrungTam
                 if (chartFin != null)
                 {
                     chartFin.Series.Clear();
-                    DataTable dtFin = DashboardDAO.Instance.GetFinanceChartData();
+                    // [REFACTOR] Dùng DashboardBUS
+                    DataTable dtFin = DashboardBUS.Instance.GetFinanceChartData();
 
                     Series sThu = new Series("Thu") { ChartType = SeriesChartType.Column, Color = Colors.Success };
                     Series sChi = new Series("Chi") { ChartType = SeriesChartType.Column, Color = Colors.Danger };
@@ -170,7 +172,8 @@ namespace QuanLyTrungTam
                 {
                     chartScore.Series.Clear();
                     Series sScore = new Series("Điểm TB") { ChartType = SeriesChartType.Bar, Color = Colors.Info, IsValueShownAsLabel = true };
-                    DataTable dtScore = DashboardDAO.Instance.GetTopClassScores();
+                    // [REFACTOR] Dùng DashboardBUS
+                    DataTable dtScore = DashboardBUS.Instance.GetTopClassScores();
                     if (dtScore != null)
                     {
                         foreach (DataRow r in dtScore.Rows)
@@ -185,7 +188,8 @@ namespace QuanLyTrungTam
                 var dgvLog = this.Controls.Find("DgvLog", true)[0] as DataGridView;
                 if (dgvLog != null)
                 {
-                    dgvLog.DataSource = DashboardDAO.Instance.GetSystemLog();
+                    // [REFACTOR] Dùng DashboardBUS
+                    dgvLog.DataSource = DashboardBUS.Instance.GetSystemLog();
                     if (dgvLog.Columns.Count > 0) dgvLog.Columns[0].Width = 140;
                 }
             }

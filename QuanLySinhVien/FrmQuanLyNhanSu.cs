@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
 using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
 
 namespace QuanLyTrungTam
 {
@@ -119,7 +120,8 @@ namespace QuanLyTrungTam
 
         void LoadData()
         {
-            ui_dgvNhanSu.DataSource = NhanVienDAO.Instance.GetListNhanVien();
+            // [REFACTOR] NhanVienBUS
+            ui_dgvNhanSu.DataSource = NhanVienBUS.Instance.GetListNhanVien();
 
             // Gắn sự kiện Click để binding dữ liệu
             ui_dgvNhanSu.CellClick -= DgvNhanSu_CellClick;
@@ -158,7 +160,8 @@ namespace QuanLyTrungTam
         {
             try
             {
-                List<string> listCN = KyNangDAO.Instance.GetListChuyenNganh();
+                // [REFACTOR] KyNangBUS
+                List<string> listCN = KyNangBUS.Instance.GetListChuyenNganh();
                 ui_cbChuyenNganh.Items.Clear();
                 foreach (string cn in listCN)
                 {
@@ -242,7 +245,8 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            if (NhanVienDAO.Instance.InsertNhanSu(ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_cbLoaiNS.Text, ui_cbChuyenNganh.Text))
+            // [REFACTOR] NhanVienBUS
+            if (NhanVienBUS.Instance.InsertNhanSu(ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_cbLoaiNS.Text, ui_cbChuyenNganh.Text))
             {
                 MessageBox.Show("Thêm nhân sự thành công!");
                 LoadData();
@@ -264,7 +268,8 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            if (NhanVienDAO.Instance.UpdateNhanSu(currentMaNS, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_cbLoaiNS.Text, ui_cbChuyenNganh.Text))
+            // [REFACTOR] NhanVienBUS
+            if (NhanVienBUS.Instance.UpdateNhanSu(currentMaNS, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_cbLoaiNS.Text, ui_cbChuyenNganh.Text))
             {
                 MessageBox.Show("Cập nhật thành công!");
                 LoadData();
@@ -277,7 +282,8 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(currentMaNS)) return;
             if (MessageBox.Show($"Bạn có chắc muốn xóa nhân sự {currentMaNS}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                if (NhanVienDAO.Instance.DeleteNhanVien(currentMaNS))
+                // [REFACTOR] NhanVienBUS
+                if (NhanVienBUS.Instance.DeleteNhanVien(currentMaNS))
                 {
                     MessageBox.Show("Đã xóa!");
                     ResetForm();
@@ -292,7 +298,8 @@ namespace QuanLyTrungTam
             // Logic cấp quyền: Nhân viên -> Admin, còn lại là user thường
             string quyen = (ui_cbLoaiNS.Text == "Nhân viên") ? "Admin" : (ui_cbLoaiNS.Text == "Trợ giảng" ? "TroGiang" : "GiaoVien");
 
-            if (AccountDAO.Instance.InsertAccount(currentMaNS, "123", quyen, currentMaNS))
+            // [REFACTOR] AccountBUS
+            if (AccountBUS.Instance.InsertAccount(currentMaNS, "123", quyen, currentMaNS))
                 MessageBox.Show($"Cấp TK thành công!\nUser: {currentMaNS}\nPass: 123");
             else
                 MessageBox.Show("Nhân sự này đã có tài khoản rồi!");

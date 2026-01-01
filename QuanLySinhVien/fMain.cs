@@ -125,7 +125,10 @@ namespace QuanLyTrungTam
             // [MỚI] 7. ĐỔI MẬT KHẨU (Nằm riêng cho dễ thấy)
             btnNavDoiMatKhau = CreateMenuButton("  🔐   ĐỔI MẬT KHẨU", btnDoiMatKhau_Click);
 
-            // 8. Đăng xuất
+            // [MỚI] 8. TRỢ GIÚP
+            CreateMenuButton("  ❓   TRỢ GIÚP", btnHelp_Click);
+
+            // 9. Đăng xuất
             CreateMenuButton("  🚪   ĐĂNG XUẤT", (s, e) => this.Close());
         }
 
@@ -278,6 +281,12 @@ namespace QuanLyTrungTam
             // Mở form fChangePassword dưới dạng Dialog (Cửa sổ con)
             fChangePassword f = new fChangePassword(loginAccount);
             f.ShowDialog();
+        }
+
+        private void btnHelp_Click(object sender, EventArgs e)
+        {
+            lblHeaderTitle.Text = "HƯỚNG DẪN & TRỢ GIÚP";
+            ActivateChildForm(new FrmHelp());
         }
 
         // --- HÀM CHUYỂN TAB TỪ FORM CON ---

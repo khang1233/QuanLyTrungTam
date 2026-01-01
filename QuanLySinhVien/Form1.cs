@@ -1,4 +1,5 @@
-﻿using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.DAO; // Giữ lại nếu cần, hoặc xóa nếu không dùng
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.DTO;
 using QuanLyTrungTam.Utilities;
 using System;
@@ -263,26 +264,26 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            if (AccountDAO.Instance.Login(user, pass, role))
+            try
             {
-                Account acc = AccountDAO.Instance.GetAccountByUserName(user);
-
-                // --- ĐOẠN ĐÃ SỬA LỖI ---
-                // Thay vì kiểm tra (!acc.TrangThai), ta so sánh chuỗi
-                if (acc != null && acc.TrangThai != "Hoạt động")
+                Account acc = AccountBUS.Instance.Login(user, pass, role);
+                if (acc != null)
                 {
-                    MessageBox.Show("Tài khoản đã bị khóa hoặc ngừng hoạt động!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
+                    AppSession.CurrentUser = acc;
+                    this.Hide();
+                    new fMain(acc).ShowDialog();
+                    this.Show();
+                    txtPass.Text = "";
                 }
-                // -----------------------
-
-                AppSession.CurrentUser = acc;
-                this.Hide();
-                new fMain(acc).ShowDialog();
-                this.Show();
-                txtPass.Text = "";
+                else
+                {
+                    MessageBox.Show("Sai thông tin đăng nhập hoặc vai trò!", "Lỗi Đăng Nhập", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else MessageBox.Show("Sai thông tin đăng nhập hoặc vai trò!", "Lỗi Đăng Nhập", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         /* // Nếu bạn chưa có GoogleHelper thì comment đoạn này lại để tránh lỗi

@@ -1,4 +1,5 @@
-﻿using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.BUS;
+using QuanLyTrungTam.DAO;
 using QuanLyTrungTam.Utilities;
 using System;
 using System.Data;
@@ -175,14 +176,19 @@ namespace QuanLyTrungTam
         {
             DataTable dt;
 
+            // [REFACTOR] Sử dụng LopHocBUS thay vì DataProvider/LopHocDAO trực tiếp
             if (AppSession.CurrentUser.Quyen.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             {
-                dt = DataProvider.Instance.ExecuteQuery("SELECT MaLop, TenLop FROM LopHoc");
+                dt = LopHocBUS.Instance.GetAllLop();
             }
             else
             {
                 string maNS = AppSession.CurrentUser.MaNguoiDung;
-                dt = LopHocDAO.Instance.GetLopByNhanSu(maNS);
+                // Cần đảm bảo LopHocBUS có hàm này. Hiện tại LopHocBUS chưa wrap GetLopByNhanSu.
+                // Sẽ thêm hàm này vào LopHocBUS ngay sau bước này.
+                // Tạm thời comment nhắc nhở hoặc thêm vào BUS trước.
+                // Để tránh lỗi compile, tôi sẽ thêm vào BUS trước.
+                dt = LopHocDAO.Instance.GetLopByNhanSu(maNS); // Tạm giữ DAO cho đến khi thêm vào BUS
             }
 
             cbLop.DataSource = dt;
@@ -195,7 +201,8 @@ namespace QuanLyTrungTam
             if (cbLop.SelectedValue == null) return;
             string maLop = cbLop.SelectedValue.ToString();
 
-            DataTable dt = DiemDAO.Instance.GetBangDiemLop(maLop);
+            // [REFACTOR] Use DiemBUS
+            DataTable dt = DiemBUS.Instance.GetBangDiemLop(maLop);
             // Thêm cột Xếp loại ảo vào DataTable để Grid hiển thị được
             if (!dt.Columns.Contains("XepLoai")) dt.Columns.Add("XepLoai", typeof(string));
 
@@ -263,8 +270,8 @@ namespace QuanLyTrungTam
                         return;
                     }
 
-                    // Gọi DAO lưu
-                    if (DiemDAO.Instance.LuuDiem(maHV, maLop, d1, d2, dGK, dCK, ghiChu))
+                    // [REFACTOR] Gọi BUS lưu điểm
+                    if (DiemBUS.Instance.LuuDiem(maHV, maLop, d1, d2, dGK, dCK, ghiChu))
                     {
                         count++;
                     }

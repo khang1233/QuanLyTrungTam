@@ -1,8 +1,10 @@
-﻿using System;
+﻿
+using System;
 using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
-using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS; // [REFACTOR] Sử dụng BUS
+// using QuanLyTrungTam.DAO; // [REFACTOR] Loại bỏ direct DAO access
 
 namespace QuanLyTrungTam
 {
@@ -25,20 +27,23 @@ namespace QuanLyTrungTam
 
         public FrmDangKyAdmin()
         {
+            // Nếu bạn có file Designer thì giữ dòng này, nếu code tay 100% thì xóa đi cũng được
+            try { InitializeComponent(); } catch { }
+
             SetupUI();           // 1. Vẽ giao diện chuẩn
             LoadDataHocVien(""); // 2. Load dữ liệu ban đầu
             LoadKyNang();        // 3. Load môn học
         }
 
         // =========================================================================
-        // 2. THIẾT KẾ GIAO DIỆN (ĐÃ FIX LỖI BỊ CHE VÀ LỆCH)
+        // 2. THIẾT KẾ GIAO DIỆN (ĐÃ FIX LỖI BỊ CHE VÀ LỆCH SPLITTER)
         // =========================================================================
         private void SetupUI()
         {
             // --- CẤU HÌNH FORM ---
             this.Controls.Clear();
-            this.FormBorderStyle = FormBorderStyle.None; // Tắt viền
-            this.Dock = DockStyle.Fill;                  // Fill đầy Dashboard
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.Dock = DockStyle.Fill;
             this.BackColor = Color.White;
 
             // --- A. HEADER (THANH TIÊU ĐỀ) ---
@@ -47,7 +52,7 @@ namespace QuanLyTrungTam
                 Dock = DockStyle.Top,
                 Height = 60,
                 BackColor = Color.FromArgb(0, 121, 107),
-                Padding = new Padding(20, 15, 0, 0) // Căn lề chữ
+                Padding = new Padding(20, 15, 0, 0)
             };
             Label lblTitle = new Label
             {
@@ -61,9 +66,9 @@ namespace QuanLyTrungTam
             // --- B. NỘI DUNG CHÍNH (SPLIT CONTAINER) ---
             SplitContainer split = new SplitContainer
             {
-                Dock = DockStyle.Fill, // Tự động lấp đầy phần còn lại
+                Dock = DockStyle.Fill,
                 BackColor = Color.WhiteSmoke,
-                SplitterWidth = 10,     // Khoảng cách giữa 2 panel
+                SplitterWidth = 10,
                 FixedPanel = FixedPanel.Panel1
             };
 
@@ -80,13 +85,13 @@ namespace QuanLyTrungTam
             };
             grpLeft.Padding = new Padding(5);
 
-            // 2. Panel chứa ô tìm kiếm
+            // Panel chứa ô tìm kiếm
             Panel pnlSearch = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 55,
                 Padding = new Padding(5, 10, 5, 10),
-                BackColor = Color.White // Đảm bảo nền trắng
+                BackColor = Color.White
             };
 
             txbSearch = new TextBox
@@ -100,29 +105,21 @@ namespace QuanLyTrungTam
 
             pnlSearch.Controls.Add(txbSearch);
 
-            // 3. Grid Học viên
+            // Grid Học viên
             dgvHocVien = new DataGridView();
             StyleGrid(dgvHocVien);
             dgvHocVien.Dock = DockStyle.Fill;
             dgvHocVien.CellClick += DgvHocVien_CellClick;
 
-            // --- [FIX QUAN TRỌNG Ở ĐÂY] ---
-            // Add thằng Grid vào TRƯỚC (Nó sẽ nằm ở Index 0 - Lớp trên cùng tạm thời)
+            // Add vào GroupBox Trái (Grid Add trước, Search Add sau để Search nằm trên)
             grpLeft.Controls.Add(dgvHocVien);
-            // Add thằng Search vào SAU (Nó sẽ nằm ở Index 0, đẩy Grid xuống Index 1)
             grpLeft.Controls.Add(pnlSearch);
-
-            // --- CHỐT HẠ LAYOUT ---
-            // Trong WinForms: Thằng nào nằm dưới cùng (SendToBack) sẽ được Dock tính toán TRƯỚC.
-            // 1. Ta muốn pnlSearch chiếm chỗ Dock.Top TRƯỚC.
+            // Đảm bảo thứ tự hiển thị đúng
             pnlSearch.SendToBack();
-            // 2. Sau đó dgvHocVien mới Fill vào phần còn lại.
             dgvHocVien.BringToFront();
 
-            // Add Group vào Split Panel 1
             split.Panel1.Padding = new Padding(10, 10, 5, 10);
             split.Panel1.Controls.Add(grpLeft);
-
 
             // ========================================================
             // PANEL PHẢI: FORM ĐĂNG KÝ + LỊCH SỬ
@@ -136,7 +133,7 @@ namespace QuanLyTrungTam
                 Dock = DockStyle.Top,
                 Height = 220,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 121, 107), // Màu xanh cho đẹp
+                ForeColor = Color.FromArgb(0, 121, 107),
                 BackColor = Color.White
             };
 
@@ -171,28 +168,28 @@ namespace QuanLyTrungTam
 
             // Add vào Panel Phải
             pnlRightContent.Controls.Add(grpList);
-            pnlRightContent.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 }); // Khoảng cách giữa 2 group
+            pnlRightContent.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 });
             pnlRightContent.Controls.Add(grpReg);
 
             split.Panel2.Padding = new Padding(5, 10, 10, 10);
             split.Panel2.Controls.Add(pnlRightContent);
 
-
             // ========================================================
-            // [QUAN TRỌNG] THỨ TỰ ADD VÀO FORM ĐỂ KHÔNG BỊ LỆCH
+            // ADD VÀO FORM & XỬ LÝ LOAD
             // ========================================================
-            // Add SplitContainer trước (Nó sẽ nằm đè lên Header nếu không chỉnh)
             this.Controls.Add(split);
-            // Add Header sau
             this.Controls.Add(pnlHeader);
 
-            // --- MẤU CHỐT SỬA LỖI: ---
-            // Đẩy Header xuống dưới cùng của ngăn xếp Z-Order -> Nó sẽ được Dock Top ĐẦU TIÊN
             pnlHeader.SendToBack();
-            // Đẩy Split lên trên cùng Z-Order -> Nó sẽ Fill vào PHẦN CÒN LẠI (Nằm dưới Header)
             split.BringToFront();
 
-            split.SplitterDistance = 420; // Chỉnh độ rộng cột trái
+            // SỰ KIỆN LOAD ĐỂ CHỈNH KÍCH THƯỚC CỘT (FIX LỖI KHÔNG ĐỔI KÍCH THƯỚC)
+            this.Load += (s, e) =>
+            {
+                split.Panel1MinSize = 0;
+                split.Panel2MinSize = 0;
+                split.SplitterDistance = 450; // Chỉnh độ rộng cột trái tại đây (450 là vừa đẹp)
+            };
 
             // Gán sự kiện
             cbKyNang.SelectedIndexChanged += CbKyNang_SelectedIndexChanged;
@@ -200,13 +197,14 @@ namespace QuanLyTrungTam
         }
 
         // =========================================================================
-        // 3. LOGIC XỬ LÝ (KHÔNG ĐỔI)
+        // 3. LOGIC XỬ LÝ (ĐÃ CẬP NHẬT TRẠNG THÁI TỰ ĐỘNG)
         // =========================================================================
 
         void LoadDataHocVien(string keyword)
         {
             if (keyword == "Nhập tên hoặc SĐT...") keyword = "";
-            DataTable dt = HocVienDAO.Instance.GetListHocVien();
+            // [REFACTOR] Use HocVienBUS
+            DataTable dt = HocVienBUS.Instance.GetListHocVien();
             if (!string.IsNullOrEmpty(keyword))
             {
                 dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%' OR SDT LIKE '%{0}%'", keyword);
@@ -223,15 +221,21 @@ namespace QuanLyTrungTam
             {
                 DataGridViewRow r = dgvHocVien.Rows[e.RowIndex];
                 currentMaHV = r.Cells["MaHV"].Value.ToString();
+
+                // Cập nhật tiêu đề GroupBox
                 GroupBox grp = (GroupBox)btnDangKy.Parent;
-                grp.Text = $" 2. Đăng Ký Cho: {r.Cells["HoTen"].Value.ToString().ToUpper()}";
+                grp.Text = $" 2. Đăng Ký Cho: {r.Cells["HoTen"].Value.ToString().ToUpper()} ({currentMaHV})";
+
                 LoadDanhSachDaDangKy();
             }
         }
 
         void LoadDanhSachDaDangKy()
         {
-            dgvDaDangKy.DataSource = TuitionDAO.Instance.GetListDangKy(currentMaHV);
+            // [REFACTOR] Use TuitionBUS
+            dgvDaDangKy.DataSource = TuitionBUS.Instance.GetListDangKy(currentMaHV);
+
+            // Thêm nút Hủy nếu chưa có
             if (!dgvDaDangKy.Columns.Contains("btnHuy"))
             {
                 DataGridViewButtonColumn btn = new DataGridViewButtonColumn();
@@ -240,11 +244,14 @@ namespace QuanLyTrungTam
                 btn.DefaultCellStyle.BackColor = Color.IndianRed; btn.DefaultCellStyle.ForeColor = Color.White;
                 dgvDaDangKy.Columns.Add(btn);
             }
+
+            // Format tiền
             if (dgvDaDangKy.Columns.Contains("HocPhiLop"))
             {
                 dgvDaDangKy.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
                 dgvDaDangKy.Columns["HocPhiLop"].HeaderText = "Học Phí";
             }
+
             string[] hide = { "MaLop", "NgayDangKy", "MaHV" };
             foreach (string c in hide) if (dgvDaDangKy.Columns.Contains(c)) dgvDaDangKy.Columns[c].Visible = false;
         }
@@ -254,17 +261,24 @@ namespace QuanLyTrungTam
             if (e.RowIndex >= 0 && dgvDaDangKy.Columns[e.ColumnIndex].Name == "btnHuy")
             {
                 string maLop = dgvDaDangKy.Rows[e.RowIndex].Cells["MaLop"].Value.ToString();
-                if (MessageBox.Show($"Hủy lớp {dgvDaDangKy.Rows[e.RowIndex].Cells["TenLop"].Value}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                string tenLop = dgvDaDangKy.Rows[e.RowIndex].Cells["TenLop"].Value.ToString();
+
+                // [REFACTOR] Use TuitionBUS
+                if (TuitionBUS.Instance.HuyDangKy(currentMaHV, maLop))
                 {
-                    if (TuitionDAO.Instance.HuyDangKy(currentMaHV, maLop)) { MessageBox.Show("Đã hủy."); LoadDanhSachDaDangKy(); }
-                    else MessageBox.Show("Lỗi hủy lớp.");
+                    // Đã sửa lỗi trong DAO (gọi EXEC params đúng), không cần gọi thủ công ở đây nữa.
+                    MessageBox.Show("Đã hủy thành công.");
+                    LoadDanhSachDaDangKy();
+                    LoadDataHocVien(txbSearch.Text); // Refresh lại danh sách
                 }
+                else MessageBox.Show("Lỗi: Không thể hủy lớp này.");
             }
         }
 
         void LoadKyNang()
         {
-            cbKyNang.DataSource = KyNangDAO.Instance.GetListKyNang();
+            // [REFACTOR] Use KyNangBUS
+            cbKyNang.DataSource = KyNangBUS.Instance.GetListKyNang();
             cbKyNang.DisplayMember = "TenKyNang"; cbKyNang.ValueMember = "MaKyNang";
         }
 
@@ -276,7 +290,9 @@ namespace QuanLyTrungTam
                 lblHocPhi.Text = hp.ToString("N0") + " VNĐ"; lblHocPhi.Tag = hp;
 
                 string maKN = row["MaKyNang"].ToString();
-                DataTable dtLop = LopHocDAO.Instance.GetListLopByKyNang(maKN);
+
+                // [REFACTOR] Use LopHocBUS instead of DAO
+                DataTable dtLop = LopHocBUS.Instance.GetListLopByKyNang(maKN);
                 DataView dvLop = new DataView(dtLop);
                 dvLop.RowFilter = "TrangThai = 'Sắp mở' OR TrangThai = 'Đang học'";
                 cbLopHoc.DataSource = dvLop; cbLopHoc.DisplayMember = "TenLop"; cbLopHoc.ValueMember = "MaLop";
@@ -285,20 +301,32 @@ namespace QuanLyTrungTam
 
         private void BtnDangKy_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Chưa chọn học viên!"); return; }
-            if (cbLopHoc.SelectedValue == null) { MessageBox.Show("Chưa chọn lớp!"); return; }
+            if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
+            if (cbLopHoc.SelectedValue == null) { MessageBox.Show("Vui lòng chọn lớp học!"); return; }
             if (lblHocPhi.Tag == null) return;
 
             decimal hp = 0; decimal.TryParse(lblHocPhi.Tag.ToString(), out hp);
-            if (TuitionDAO.Instance.DangKyLop(currentMaHV, cbLopHoc.SelectedValue.ToString(), hp))
+
+            // [REFACTOR] Use TuitionBUS instead of DAO
+            if (TuitionBUS.Instance.DangKyLop(currentMaHV, cbLopHoc.SelectedValue.ToString(), hp))
             {
-                MessageBox.Show("Đăng ký thành công!"); LoadDanhSachDaDangKy();
+                // Đã sửa lỗi trong DAO (gọi EXEC params đúng), không cần gọi thủ công ở đây nữa.
+                MessageBox.Show("Đăng ký thành công!");
+                LoadDanhSachDaDangKy();
+                LoadDataHocVien(txbSearch.Text); // Refresh lại danh sách
             }
-            else MessageBox.Show("Học viên đã có trong lớp này!");
+            else
+            {
+                MessageBox.Show("Học viên đã có trong lớp này rồi!");
+            }
         }
 
         // --- STYLE & HELPER ---
-        public void AutoSelectStudent(string maHV) { txbSearch.Text = maHV; txbSearch.ForeColor = Color.Black; }
+        public void AutoSelectStudent(string maHV)
+        {
+            txbSearch.Text = maHV;
+            txbSearch.ForeColor = Color.Black;
+        }
 
         private void StyleGrid(DataGridView dgv)
         {
