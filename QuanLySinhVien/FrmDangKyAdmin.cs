@@ -224,7 +224,7 @@ namespace QuanLyTrungTam
 
                 // Cập nhật tiêu đề GroupBox
                 GroupBox grp = (GroupBox)btnDangKy.Parent;
-                grp.Text = $" 2. Đăng Ký Cho: {r.Cells["HoTen"].Value.ToString().ToUpper()} ({currentMaHV})";
+                grp.Text = string.Format(" 2. Đăng Ký Cho: {0} ({1})", r.Cells["HoTen"].Value.ToString().ToUpper(), currentMaHV);
 
                 LoadDanhSachDaDangKy();
             }
@@ -284,7 +284,8 @@ namespace QuanLyTrungTam
 
         private void CbKyNang_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (cbKyNang.SelectedValue != null && cbKyNang.SelectedItem is DataRowView row)
+            DataRowView row = cbKyNang.SelectedItem as DataRowView;
+            if (cbKyNang.SelectedValue != null && row != null)
             {
                 decimal hp = row["HocPhi"] != DBNull.Value ? Convert.ToDecimal(row["HocPhi"]) : 0;
                 lblHocPhi.Text = hp.ToString("N0") + " VNĐ"; lblHocPhi.Tag = hp;

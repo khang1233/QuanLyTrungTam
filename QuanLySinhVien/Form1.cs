@@ -209,8 +209,10 @@ namespace QuanLyTrungTam
             return p;
         }
 
-        private RadioButton CreateRadio(string text) =>
-            new RadioButton { Text = text, Font = new Font("Segoe UI", 11), AutoSize = true, Margin = new Padding(0, 0, 25, 0), Cursor = Cursors.Hand };
+        private RadioButton CreateRadio(string text)
+        {
+            return new RadioButton { Text = text, Font = new Font("Segoe UI", 11), AutoSize = true, Margin = new Padding(0, 0, 25, 0), Cursor = Cursors.Hand };
+        }
 
         private Control CreateLoginButton()
         {

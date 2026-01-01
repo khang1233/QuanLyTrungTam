@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
@@ -146,7 +147,7 @@ namespace QuanLyTrungTam
             DataRow r = HocVienBUS.Instance.GetInfoHocVien(currentMaHV);
             if (r != null)
             {
-                lblWelcome.Text = $"Xin chào học viên: {r["HoTen"].ToString().ToUpper()} ({currentMaHV})";
+                lblWelcome.Text = string.Format("Xin chào học viên: {0} ({1})", r["HoTen"].ToString().ToUpper(), currentMaHV);
 
                 // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
                 HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(currentMaHV);
@@ -154,7 +155,7 @@ namespace QuanLyTrungTam
 
                 if (conNo > 0)
                 {
-                    lblDebtStatus.Text = $"Cảnh báo: Bạn còn nợ học phí {conNo:N0} VNĐ. Vui lòng đóng sớm!";
+                    lblDebtStatus.Text = string.Format("Cảnh báo: Bạn còn nợ học phí {0:N0} VNĐ. Vui lòng đóng sớm!", conNo);
                     lblDebtStatus.ForeColor = Color.Red;
                 }
                 else
@@ -165,9 +166,7 @@ namespace QuanLyTrungTam
             }
 
             // 2. Lịch học
-            // [REFACTOR] Dùng LopHocBUS (thay vì TuitionBUS.GetListDangKy? No, TuitionBUS was wrapping TuitionDAO.GetListDangKy. Wait, LopHocBUS has GetScheduleByHocVien?)
-            // TuitionDAO.GetListDangKy returns schedule too. Let's check which BUS to use.
-            // In step 62 I added GetListDangKy to TuitionBUS. So use TuitionBUS.
+            // [REFACTOR] Dùng TuitionBUS
             DataTable dtSch = TuitionBUS.Instance.GetListDangKy(currentMaHV);
             dgvSchedule.DataSource = dtSch;
             SetHeader(dgvSchedule, "TenLop", "Lớp Học");

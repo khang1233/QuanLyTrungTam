@@ -106,7 +106,8 @@ namespace QuanLyTrungTam
             // Đổi tiêu đề label
             foreach (Control c in this.Controls)
             {
-                if (c is Panel pnl) // Tìm trong Panel Tool
+                Panel pnl = c as Panel;
+                if (pnl != null)
                 {
                     foreach (Control child in pnl.Controls)
                     {
@@ -193,9 +194,9 @@ namespace QuanLyTrungTam
                 string id = cbFilterValue.SelectedValue.ToString();
                 DataView dv = new DataView(allLop);
 
-                if (cbFilterType.SelectedIndex == 1) dv.RowFilter = $"MaGiaoVien = '{id}'";
-                else if (cbFilterType.SelectedIndex == 2) dv.RowFilter = $"MaPhong = '{id}'";
-                else if (cbFilterType.SelectedIndex == 3) dv.RowFilter = $"MaLop = '{id}'";
+                if (cbFilterType.SelectedIndex == 1) dv.RowFilter = string.Format("MaGiaoVien = '{0}'", id);
+                else if (cbFilterType.SelectedIndex == 2) dv.RowFilter = string.Format("MaPhong = '{0}'", id);
+                else if (cbFilterType.SelectedIndex == 3) dv.RowFilter = string.Format("MaLop = '{0}'", id);
 
                 dtResult = dv.ToTable();
             }

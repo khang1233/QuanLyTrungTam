@@ -59,24 +59,24 @@ namespace QuanLyTrungTam.BUS
                 if (!CheckTrungThu(thuInput, dbThu)) continue;
 
                 // Trùng lịch rồi -> Check đối tượng
-                string lopGayTrung = $"{row["TenLop"]} ({row["MaLop"]})";
+                string lopGayTrung = string.Format("{0} ({1})", row["TenLop"], row["MaLop"]);
                 string dbPhong = row["MaPhong"].ToString();
                 string dbGV = row["MaGiaoVien"].ToString();
                 string dbTG = row["MaTroGiang"].ToString();
 
                 if (!string.IsNullOrEmpty(maPhong) && maPhong == dbPhong)
-                    return $"Phòng '{maPhong}' bị trùng lịch với lớp: {lopGayTrung}.";
+                    return string.Format("Phòng '{0}' bị trùng lịch với lớp: {1}.", maPhong, lopGayTrung);
 
                 if (!string.IsNullOrEmpty(maGV))
                 {
-                    if (maGV == dbGV) return $"Giảng viên đã có lịch dạy lớp: {lopGayTrung}.";
-                    if (maGV == dbTG) return $"Giảng viên đang làm trợ giảng cho lớp: {lopGayTrung}.";
+                    if (maGV == dbGV) return string.Format("Giảng viên đã có lịch dạy lớp: {0}.", lopGayTrung);
+                    if (maGV == dbTG) return string.Format("Giảng viên đang làm trợ giảng cho lớp: {0}.", lopGayTrung);
                 }
 
                 if (!string.IsNullOrEmpty(maTG))
                 {
-                    if (maTG == dbGV) return $"Trợ giảng đang là GV chính của lớp: {lopGayTrung}.";
-                    if (maTG == dbTG) return $"Trợ giảng đã có lịch tại lớp: {lopGayTrung}.";
+                    if (maTG == dbGV) return string.Format("Trợ giảng đang là GV chính của lớp: {0}.", lopGayTrung);
+                    if (maTG == dbTG) return string.Format("Trợ giảng đã có lịch tại lớp: {0}.", lopGayTrung);
                 }
             }
 

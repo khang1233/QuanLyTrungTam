@@ -146,7 +146,7 @@ namespace QuanLyTrungTam
             if (keyword == "Nhập mã số hoặc tên học viên...") keyword = "";
             DataTable dt = ui_dgvHocVien.DataSource as DataTable;
             if (dt != null)
-                dt.DefaultView.RowFilter = string.IsNullOrEmpty(keyword) ? "" : $"MaHV LIKE '%{keyword}%' OR HoTen LIKE '%{keyword}%'";
+                dt.DefaultView.RowFilter = string.IsNullOrEmpty(keyword) ? "" : string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%'", keyword);
         }
 
         // Sự kiện khi click vào một dòng trong Grid
@@ -238,9 +238,9 @@ namespace QuanLyTrungTam
             }
 
             // Xác nhận xóa (Quan trọng)
-            string msg = $"Bạn có chắc chắn muốn xóa học viên [{ui_txbTen.Text}] (Mã: {currentMaHV})?\n\n" +
+            string msg = string.Format("Bạn có chắc chắn muốn xóa học viên [{0}] (Mã: {1})?\n\n", ui_txbTen.Text, currentMaHV) +
                          "⚠️ CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn:\n";
-                        
+
 
             if (MessageBox.Show(msg, "Xác nhận xóa dữ liệu", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
             {

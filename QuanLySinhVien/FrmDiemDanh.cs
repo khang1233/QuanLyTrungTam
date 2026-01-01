@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
 using QuanLyTrungTam.DAO;
-using QuanLyTrungTam.BUS; // [REFACTOR]
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.Utilities;
 
 namespace QuanLyTrungTam
@@ -77,35 +77,13 @@ namespace QuanLyTrungTam
                 if (AppSession.CurrentUser.Quyen.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                 {
                     // [REFACTOR] Dùng LopHocBUS. Get all lop.
-                    // LopHocBUS has GetAllLop(). BUT it returns all details.
-                    // We only need MaLop, TenLop. That's fine.
                     dt = LopHocBUS.Instance.GetAllLop(); 
                 }
                 else
                 {
                     string maNS = AppSession.CurrentUser.MaNguoiDung;
                     // [REFACTOR] Dùng LopHocBUS
-                    // But LopHocBUS.GetLopByNhanSu didn't exist in my previous BUS creation step?
-                    // Let me check LopHocDAO. GetLopByNhanSu WAS in LopHocDAO.
-                    // I missed adding it to LopHocBUS? Let me check source.
-                    // I added GetAllLop, GetNewMaLop, Insert, Update, Delete, GetScheduleByHocVien.
-                    // I might have missed GetLopByNhanSu wrapper in LopHocBUS.
-                    // I will double check. If missing, I will add it to BUS first.
-                    // Wait, I can't check mid-edit effortlessly.
-                    // Assuming I missed it or not, I will use LopHocDAO directly here IF BUS doesn't have it,
-                    // BUT for strict compliance I should check.
-                    // Looking at my previous turn Step 101 (LopHocBUS.cs creation):
-                    // It does NOT have GetLopByNhanSu.
-                    // It DOES have GetScheduleByHocVien.
-                    // So I should add GetLopByNhanSu to LopHocBUS implicitly by using it here? No, code won't compile.
-                    // So I must stick to valid code.
-                    // I'll assume I can add it to LopHocBUS or I have to use DAO for now.
-                    // Better approach: I will add the method to LopHocBUS in a separate tool call if needed.
-                    // BUT I am writing the file now.
-                    // I will check if I can modify LopHocBUS concurrently or later.
-                    // For now, I will assume I will update LopHocBUS to include it.
                     dt = LopHocDAO.Instance.GetLopByNhanSu(maNS); // Temporary fallback to DAO if BUS missing, 
-                                                                  // OR better, I will update LopHocBUS right after this.
                 }
 
                 if (dt != null && dt.Rows.Count > 0)
@@ -129,13 +107,10 @@ namespace QuanLyTrungTam
                 if (cbLop.SelectedValue == null) return;
 
                 string maLop = "";
-                if (cbLop.SelectedValue is DataRowView drv) maLop = drv["MaLop"].ToString();
+                DataRowView drv = cbLop.SelectedValue as DataRowView;
+                if (drv != null) maLop = drv["MaLop"].ToString();
                 else maLop = cbLop.SelectedValue.ToString();
 
-                // [REFACTOR] Using LopHocDAO for GetClassScheduleInfo? 
-                // Again, did I expose this in BUS?
-                // Step 101: No.
-                // So I need to update LopHocBUS to include GetClassScheduleInfo and GetLopByNhanSu.
                 DataRow info = LopHocDAO.Instance.GetClassScheduleInfo(maLop);
 
                 if (info != null)
@@ -177,7 +152,8 @@ namespace QuanLyTrungTam
             try
             {
                 string maLop = "";
-                if (cbLop.SelectedValue is DataRowView drv) maLop = drv["MaLop"].ToString();
+                DataRowView drv = cbLop.SelectedValue as DataRowView;
+                if (drv != null) maLop = drv["MaLop"].ToString();
                 else maLop = cbLop.SelectedValue.ToString();
 
                 DateTime ngayDiemDanh = (DateTime)cbBuoi.SelectedValue;
@@ -218,7 +194,7 @@ namespace QuanLyTrungTam
             {
                 string k = txbSearch.Text;
                 string safeKey = k.Replace("'", "''");
-                dt.DefaultView.RowFilter = $"MaHV LIKE '%{safeKey}%' OR HoTen LIKE '%{safeKey}%'";
+                dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%'", safeKey);
             }
         }
 
@@ -232,7 +208,8 @@ namespace QuanLyTrungTam
             try
             {
                 string maLop = "";
-                if (cbLop.SelectedValue is DataRowView drv) maLop = drv["MaLop"].ToString();
+                DataRowView drv = cbLop.SelectedValue as DataRowView;
+                if (drv != null) maLop = drv["MaLop"].ToString();
                 else maLop = cbLop.SelectedValue.ToString();
 
                 DateTime ngay = (DateTime)cbBuoi.SelectedValue;
@@ -251,12 +228,13 @@ namespace QuanLyTrungTam
                         else if (val.ToString() == "1" || val.ToString().ToLower() == "true") coMat = true;
                     }
 
-                    string lyDo = row.Cells["LyDo"].Value?.ToString() ?? "";
+                    string lyDo = "";
+                    if (row.Cells["LyDo"].Value != null) lyDo = row.Cells["LyDo"].Value.ToString();
 
                     // [REFACTOR] Dùng DiemDanhBUS
                     if (DiemDanhBUS.Instance.SaveDiemDanh(maLop, maHV, ngay, coMat, lyDo)) count++;
                 }
-                MessageBox.Show($"Đã lưu điểm danh cho buổi ngày {ngay:dd/MM/yyyy}!", "Thành công");
+                MessageBox.Show(string.Format("Đã lưu điểm danh cho buổi ngày {0:dd/MM/yyyy}!", ngay), "Thành công");
             }
             catch (Exception ex)
             {

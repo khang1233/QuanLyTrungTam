@@ -168,7 +168,7 @@ namespace QuanLyTrungTam
 
             if (!string.IsNullOrEmpty(keyword) && keyword != "🔍 Nhập tên hoặc mã học viên...")
             {
-                dt.DefaultView.RowFilter = $"MaHV LIKE '%{keyword}%' OR HoTen LIKE '%{keyword}%'";
+                dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%'", keyword);
             }
 
             dgvSearchResult.DataSource = dt;
@@ -218,11 +218,8 @@ namespace QuanLyTrungTam
             // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
             HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(currentMaHV);
 
-            lblTaiChinh.Text = $"Học Viên: {tenHV.ToUpper()}\n\n" +
-                               $"Tổng Học Phí: {info.TongNo:N0} đ\n" +
-                               $"Đã Đóng:      {info.DaDong:N0} đ\n" +
-                               $"--------------------------\n" +
-                               $"CÒN NỢ:       {info.ConNo:N0} VNĐ";
+            lblTaiChinh.Text = string.Format("Học Viên: {0}\n\nTổng Học Phí: {1:N0} đ\nĐã Đóng:      {2:N0} đ\n--------------------------\nCÒN NỢ:       {3:N0} VNĐ", 
+                tenHV.ToUpper(), info.TongNo, info.DaDong, info.ConNo);
 
             lblTaiChinh.ForeColor = info.ConNo > 0 ? Color.Red : Color.Green;
             txbDongTien.Clear();
@@ -243,7 +240,8 @@ namespace QuanLyTrungTam
 
             string inputTien = txbDongTien.Text.Replace(",", "").Replace(".", "").Trim();
 
-            if (decimal.TryParse(inputTien, out decimal soTien) && soTien > 0)
+            decimal soTien;
+            if (decimal.TryParse(inputTien, out soTien) && soTien > 0)
             {
                 // [REFACTOR] Dùng TuitionBUS.GetHocPhiInfo
                 HocPhiInfo info = TuitionBUS.Instance.GetHocPhiInfo(currentMaHV);
@@ -256,13 +254,13 @@ namespace QuanLyTrungTam
                 }
                 if (soTien > conNo)
                 {
-                    MessageBox.Show($"Số tiền đóng ({soTien:N0}) vượt quá nợ ({conNo:N0}).", "Cảnh báo");
+                    MessageBox.Show(string.Format("Số tiền đóng ({0:N0}) vượt quá nợ ({1:N0}).", soTien, conNo), "Cảnh báo");
                     txbDongTien.Text = conNo.ToString("N0");
                     return;
                 }
 
                 // XÁC NHẬN
-                if (MessageBox.Show($"Xác nhận thu {soTien:N0} đ?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                if (MessageBox.Show(string.Format("Xác nhận thu {0:N0} đ?", soTien), "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     string noiDungThu = "Thu tại quầy";
 
@@ -308,7 +306,8 @@ namespace QuanLyTrungTam
             dlg.Width = 1000;
             dlg.Height = 800;
             dlg.StartPosition = FormStartPosition.CenterScreen;
-            if (dlg is Form form) { form.WindowState = FormWindowState.Maximized; form.TopMost = true; }
+            Form form = dlg as Form;
+            if (form != null) { form.WindowState = FormWindowState.Maximized; form.TopMost = true; }
 
             dlg.ShowDialog();
         }
@@ -334,7 +333,7 @@ namespace QuanLyTrungTam
             // Header
             g.DrawString("TRUNG TÂM ĐÀO TẠO", fTitle, Brushes.Blue, center, y, centerAlign); y += 40;
             g.DrawString("BIÊN LAI THU TIỀN", new Font("Arial", 24, FontStyle.Bold), Brushes.Red, center, y, centerAlign); y += 50;
-            g.DrawString($"Ngày: {DateTime.Now:dd/MM/yyyy HH:mm}", fSub, Brushes.Black, center, y, centerAlign); y += 60;
+            g.DrawString(string.Format("Ngày: {0:dd/MM/yyyy HH:mm}", DateTime.Now), fSub, Brushes.Black, center, y, centerAlign); y += 60;
 
             // Body
             float left = 100;

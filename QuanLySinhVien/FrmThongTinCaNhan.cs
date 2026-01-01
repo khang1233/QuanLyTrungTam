@@ -68,7 +68,7 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(email)) return;
 
             // 2. Hỏi xác nhận
-            if (MessageBox.Show($"Bạn muốn liên kết tài khoản này với Google: {email}?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (MessageBox.Show(string.Format("Bạn muốn liên kết tài khoản này với Google: {0}?", email), "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 // 3. Cập nhật vào DB
                 string maHV = loginAccount.MaNguoiDung; // Lấy mã HV của người đang đăng nhập
@@ -91,14 +91,6 @@ namespace QuanLyTrungTam
             {
                 Label lblName = this.Controls.Find("lblName", true)[0] as Label;
                 Label lblExtra = this.Controls.Find("lblExtra", true)[0] as Label;
-
-                // CODE CŨ (Bị lỗi do SinhVienDAO không còn) -> COMMENT LẠI
-                /*
-                if (loginAccount.Quyen.ToLower() == "sinhvien") {
-                    var listSV = SinhVienDAO.Instance.SearchSinhVienByID(loginAccount.MaNguoiDung);
-                    if (listSV.Count > 0) { ... }
-                }
-                */
 
                 // CODE MỚI (Đơn giản hóa để chạy được)
                 lblName.Text = "Xin chào: " + loginAccount.TenDangNhap;

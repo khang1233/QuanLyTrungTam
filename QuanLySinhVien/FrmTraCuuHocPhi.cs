@@ -125,7 +125,7 @@ namespace QuanLyTrungTam
             }
 
             if (!string.IsNullOrEmpty(keyword) && keyword != "🔍 Nhập tên hoặc mã học viên...")
-                dt.DefaultView.RowFilter = $"MaHV LIKE '%{keyword}%' OR HoTen LIKE '%{keyword}%'";
+                dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%'", keyword);
 
             dgvSearchResult.DataSource = dt;
             SafeSetHeader(dgvSearchResult, "MaHV", "Mã HV");
@@ -176,12 +176,8 @@ namespace QuanLyTrungTam
             decimal conNo = tongNo - daDong;
 
             // Hiển thị gọn gàng như cũ
-            string info = $"Học Viên: {tenHV.ToUpper()}\n\n" +
-                          $"Tổng Học Phí: {tongNo:N0} VNĐ\n" +
-                          $"--------------------------\n" +
-                          (daDong > 0 ? $"Đã Đóng:      {daDong:N0} VNĐ\n" : "(Chưa đóng khoản nào)\n") +
-                          $"--------------------------\n" +
-                          $"CÒN NỢ:       {conNo:N0} VNĐ";
+            string info = string.Format("Học Viên: {0}\n\nTổng Học Phí: {1:N0} VNĐ\n--------------------------\n{2}--------------------------\nCÒN NỢ:       {3:N0} VNĐ", 
+                tenHV.ToUpper(), tongNo, (daDong > 0 ? string.Format("Đã Đóng:      {0:N0} VNĐ\n", daDong) : "(Chưa đóng khoản nào)\n"), conNo);
 
             lblTaiChinh.Text = info;
             lblTaiChinh.ForeColor = conNo > 0 ? Color.Red : Color.Green;
@@ -224,7 +220,7 @@ namespace QuanLyTrungTam
         // --- IN ẤN ---
         private void ThucHienInHoaDon(string maHV, string tenHV, decimal soTien, string hinhThuc)
         {
-            _printTenHV = tenHV; _printSoTien = $"{soTien:N0} VNĐ"; _printHinhThuc = hinhThuc;
+            _printTenHV = tenHV; _printSoTien = string.Format("{0:N0} VNĐ", soTien); _printHinhThuc = hinhThuc;
             PrintDocument pd = new PrintDocument();
             pd.PrintPage += VeHoaDon;
             PrintPreviewDialog dlg = new PrintPreviewDialog { Document = pd, Width = 800, Height = 600 };
@@ -239,13 +235,13 @@ namespace QuanLyTrungTam
 
             g.DrawString("TRUNG TÂM ĐÀO TẠO", new Font("Arial", 22, FontStyle.Bold), Brushes.Blue, w / 2, y, center); y += 50;
             g.DrawString("BIÊN LAI THU TIỀN", new Font("Arial", 18, FontStyle.Bold), Brushes.Red, w / 2, y, center); y += 40;
-            g.DrawString($"(Hình thức: {_printHinhThuc})", new Font("Arial", 11, FontStyle.Italic), Brushes.Black, w / 2, y, center); y += 50;
+            g.DrawString(string.Format("(Hình thức: {0})", _printHinhThuc), new Font("Arial", 11, FontStyle.Italic), Brushes.Black, w / 2, y, center); y += 50;
 
             float x = 100;
-            g.DrawString($"Mã HV:   {currentMaHV}", new Font("Arial", 12), Brushes.Black, x, y); y += 35;
-            g.DrawString($"Họ Tên:  {_printTenHV}", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, x, y); y += 35;
-            g.DrawString($"Số Tiền: {_printSoTien}", new Font("Arial", 16, FontStyle.Bold), Brushes.Red, x, y); y += 45;
-            g.DrawString($"Ngày:    {DateTime.Now:dd/MM/yyyy HH:mm}", new Font("Arial", 12), Brushes.Gray, x, y);
+            g.DrawString(string.Format("Mã HV:   {0}", currentMaHV), new Font("Arial", 12), Brushes.Black, x, y); y += 35;
+            g.DrawString(string.Format("Họ Tên:  {0}", _printTenHV), new Font("Arial", 12, FontStyle.Bold), Brushes.Black, x, y); y += 35;
+            g.DrawString(string.Format("Số Tiền: {0}", _printSoTien), new Font("Arial", 16, FontStyle.Bold), Brushes.Red, x, y); y += 45;
+            g.DrawString(string.Format("Ngày:    {0:dd/MM/yyyy HH:mm}", DateTime.Now), new Font("Arial", 12), Brushes.Gray, x, y);
 
             float rightX = w - 200;
             y += 50;
@@ -279,7 +275,8 @@ namespace QuanLyTrungTam
         {
             foreach (DataGridViewRow r in dgvSearchResult.Rows)
             {
-                if (r.Cells["TrangThaiHocPhi"].Value?.ToString() == "Còn nợ") r.Cells["TrangThaiHocPhi"].Style.ForeColor = Color.Red;
+                object val = r.Cells["TrangThaiHocPhi"].Value;
+                if (val != null && val.ToString() == "Còn nợ") r.Cells["TrangThaiHocPhi"].Style.ForeColor = Color.Red;
                 else r.Cells["TrangThaiHocPhi"].Style.ForeColor = Color.Green;
             }
         }
@@ -319,7 +316,7 @@ namespace QuanLyTrungTam
             // 1. INFO TOP
             Label lblTitle = new Label { Text = "THÔNG TIN THANH TOÁN", Dock = DockStyle.Top, Height = 40, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.Navy };
             Panel pnlInfo = new Panel { Dock = DockStyle.Top, Height = 80, Padding = new Padding(20) };
-            Label lblInfo = new Label { Text = $"Học viên: {_tenHV} ({_maHV})\nSố tiền nợ: {_noHienTai:N0} VNĐ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 11), ForeColor = Color.Red };
+            Label lblInfo = new Label { Text = string.Format("Học viên: {0} ({1})\nSố tiền nợ: {2:N0} VNĐ", _tenHV, _maHV, _noHienTai), Dock = DockStyle.Fill, Font = new Font("Segoe UI", 11), ForeColor = Color.Red };
             pnlInfo.Controls.Add(lblInfo);
 
             // 2. METHOD
@@ -385,11 +382,12 @@ namespace QuanLyTrungTam
             try
             {
                 string s = txbTien.Text.Replace(",", "").Replace(".", "").Trim();
-                if (decimal.TryParse(s, out decimal tien) && tien > 0)
+                decimal tien;
+                if (decimal.TryParse(s, out tien) && tien > 0)
                 {
-                    string url = $"https://img.vietqr.io/image/MB-0705840113-compact.png?amount={tien}&addInfo={_maHV}";
+                    string url = string.Format("https://img.vietqr.io/image/MB-0705840113-compact.png?amount={0}&addInfo={1}", tien, _maHV);
                     picQR.LoadAsync(url);
-                    lblHuongDan.Text = $"Quét mã để chuyển: {tien:N0} VNĐ";
+                    lblHuongDan.Text = string.Format("Quét mã để chuyển: {0:N0} VNĐ", tien);
                 }
             }
             catch { }
@@ -404,7 +402,8 @@ namespace QuanLyTrungTam
             }
 
             string s = txbTien.Text.Replace(",", "").Replace(".", "").Trim();
-            if (!decimal.TryParse(s, out decimal tien) || tien <= 0) { MessageBox.Show("Số tiền không hợp lệ!"); return; }
+            decimal tien;
+            if (!decimal.TryParse(s, out tien) || tien <= 0) { MessageBox.Show("Số tiền không hợp lệ!"); return; }
             if (tien > _noHienTai) { MessageBox.Show("Thu quá số nợ!"); return; }
 
             FinalAmount = tien;

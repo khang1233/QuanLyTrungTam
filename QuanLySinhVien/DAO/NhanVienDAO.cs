@@ -1,4 +1,5 @@
 ﻿using QuanLyTrungTam.DTO;
+using QuanLyTrungTam.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -80,7 +81,7 @@ namespace QuanLyTrungTam.DAO
         public bool InsertNhanSu(string hoTen, DateTime ngaySinh, string sdt, string email, string loaiNS, string chuyenNganh)
         {
             // Nếu không phải Giáo viên thì chuyên ngành là null
-            object cn = (loaiNS == "Giáo viên" || loaiNS == "Giáo Viên") ? (object)chuyenNganh : DBNull.Value;
+            object cn = (loaiNS == Constants.ROLE_GIAO_VIEN || loaiNS == "Giáo Viên") ? (object)chuyenNganh : DBNull.Value;
 
             string query = "EXEC USP_ThemNhanSu @ten , @ns , @sdt , @email , @loai , @cn";
             return DataProvider.Instance.ExecuteNonQuery(query, new object[] { hoTen, ngaySinh, sdt, email, loaiNS, cn }) > 0;
@@ -89,7 +90,7 @@ namespace QuanLyTrungTam.DAO
         // Sử dụng Stored Procedure để cập nhật nhân sự
         public bool UpdateNhanSu(string maNS, string hoTen, DateTime ngaySinh, string sdt, string email, string loaiNS, string chuyenNganh)
         {
-            object cn = (loaiNS == "Giáo viên" || loaiNS == "Giáo Viên") ? (object)chuyenNganh : DBNull.Value;
+            object cn = (loaiNS == Constants.ROLE_GIAO_VIEN || loaiNS == "Giáo Viên") ? (object)chuyenNganh : DBNull.Value;
 
             string query = "EXEC USP_CapNhatNhanSu @ma , @ten , @ns , @sdt , @email , @loai , @cn";
             return DataProvider.Instance.ExecuteNonQuery(query, new object[] { maNS, hoTen, ngaySinh, sdt, email, loaiNS, cn }) > 0;
@@ -98,9 +99,12 @@ namespace QuanLyTrungTam.DAO
         public bool DeleteNhanVien(string ma)
         {
             // Xóa tài khoản trước (nếu có ràng buộc khóa ngoại)
-            DataProvider.Instance.ExecuteNonQuery("DELETE FROM TaiKhoan WHERE MaNguoiDung = '" + ma + "'");
+            string queryTK = "DELETE FROM TaiKhoan WHERE MaNguoiDung = @ma";
+             DataProvider.Instance.ExecuteNonQuery(queryTK, new object[] { ma });
+            
             // Sau đó xóa nhân sự
-            return DataProvider.Instance.ExecuteNonQuery("DELETE FROM NhanSu WHERE MaNS = '" + ma + "'") > 0;
+            string queryNS = "DELETE FROM NhanSu WHERE MaNS = @ma";
+            return DataProvider.Instance.ExecuteNonQuery(queryNS, new object[] { ma }) > 0;
         }
 
         // =========================================================================
@@ -115,6 +119,8 @@ namespace QuanLyTrungTam.DAO
             else if (loaiNS.Contains("Trợ")) prefix = "TG";
 
             // Lấy mã lớn nhất hiện tại của loại đó
+            // Note: Cannot easily parameterize LIKE prefix% in this simple DataProvider without extra care, 
+            // but prefix is derived internally so it is safe.
             string query = "SELECT TOP 1 MaNS FROM NhanSu WHERE MaNS LIKE '" + prefix + "%' ORDER BY MaNS DESC";
             object result = DataProvider.Instance.ExecuteScalar(query);
 
@@ -123,7 +129,8 @@ namespace QuanLyTrungTam.DAO
             string lastMa = result.ToString(); // Ví dụ: GV15
 
             // Cắt bỏ prefix, lấy số và cộng 1
-            if (lastMa.Length > 2 && int.TryParse(lastMa.Substring(2), out int nextID))
+            int nextID;
+            if (lastMa.Length > 2 && int.TryParse(lastMa.Substring(2), out nextID))
             {
                 return prefix + (nextID + 1).ToString("D2"); // D2 để ra số 01, 02...
             }
@@ -136,8 +143,8 @@ namespace QuanLyTrungTam.DAO
 
         public bool InsertNhanVien(string ma, string ten, string loai, string sdt, string email)
         {
-            string query = string.Format("INSERT INTO NhanSu (MaNS, HoTen, LoaiNS, SDT, Email, TrangThai) VALUES ('{0}', N'{1}', N'{2}', '{3}', '{4}', N'Đang làm việc')", ma, ten, loai, sdt, email);
-            return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            string query = "INSERT INTO NhanSu (MaNS, HoTen, LoaiNS, SDT, Email, TrangThai) VALUES ( @ma , @ten , @loai , @sdt , @email , N'Đang làm việc')";
+            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { ma, ten, loai, sdt, email }) > 0;
         }
     }
 }

@@ -39,7 +39,7 @@ namespace QuanLyTrungTam
             ApplyUserPermissions();
 
             // Tự động click Dashboard nếu không phải Học viên
-            if (!loginAccount.Quyen.ToLower().Contains("hocvien"))
+            if (!loginAccount.Quyen.Equals(Constants.ROLE_HOC_VIEN, StringComparison.OrdinalIgnoreCase))
             {
                 this.Load += (s, e) =>
                 {
@@ -149,7 +149,7 @@ namespace QuanLyTrungTam
                 Tag = Color.FromArgb(31, 30, 68)
             };
             btn.FlatAppearance.BorderSize = 0;
-            btn.Click += (s, e) => { ActivateButton(s); click?.Invoke(s, e); };
+            btn.Click += (s, e) => { ActivateButton(s); if (click != null) click.Invoke(s, e); };
             pnlSidebar.Controls.Add(btn);
             return btn;
         }
@@ -162,7 +162,7 @@ namespace QuanLyTrungTam
                 Button b = new Button { Text = "    ● " + items[i], Dock = DockStyle.Top, Height = 45, FlatStyle = FlatStyle.Flat, ForeColor = Color.Silver, Font = new Font("Segoe UI", 9), TextAlign = ContentAlignment.MiddleLeft, Cursor = Cursors.Hand };
                 b.FlatAppearance.BorderSize = 0;
                 int idx = i;
-                b.Click += (s, e) => { events[idx]?.Invoke(s, e); };
+                b.Click += (s, e) => { if (events[idx] != null) events[idx].Invoke(s, e); };
                 p.Controls.Add(b);
                 b.BringToFront();
             }
@@ -222,10 +222,10 @@ namespace QuanLyTrungTam
             string role = loginAccount.Quyen;
 
             // 1. ADMIN: Hiện tất cả
-            if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase)) return;
+             if (role.Equals(Constants.ROLE_ADMIN, StringComparison.OrdinalIgnoreCase)) return;
 
             // 2. HỌC VIÊN: Ẩn sidebar, chuyển sang Form riêng
-            if (role.Equals("HocVien", StringComparison.OrdinalIgnoreCase))
+            if (role.Equals(Constants.ROLE_HOC_VIEN, StringComparison.OrdinalIgnoreCase))
             {
                 pnlSidebar.Visible = false;
                 ActivateChildForm(new FrmHomeHocVien(loginAccount.MaNguoiDung));
@@ -233,9 +233,9 @@ namespace QuanLyTrungTam
             }
 
             // 3. NHÂN SỰ (Giáo viên / Trợ giảng)
-            if (role.Equals("GiaoVien", StringComparison.OrdinalIgnoreCase) ||
-                role.Equals("TroGiang", StringComparison.OrdinalIgnoreCase) ||
-                role.Equals("NhanSu", StringComparison.OrdinalIgnoreCase))
+            if (role.Equals(Constants.ROLE_GIAO_VIEN, StringComparison.OrdinalIgnoreCase) ||
+                role.Equals(Constants.ROLE_TRO_GIANG, StringComparison.OrdinalIgnoreCase) ||
+                role.Equals(Constants.ROLE_NHAN_SU, StringComparison.OrdinalIgnoreCase))
             {
                 // Ẩn Dashboard & Tài Chính & Học Viên
                 if (btnNavDashboard != null) btnNavDashboard.Visible = false;
@@ -245,7 +245,8 @@ namespace QuanLyTrungTam
                 // Ẩn menu Hệ thống (Nhật ký, Tài khoản) - Chỉ giữ nút Đổi Mật Khẩu riêng
                 foreach (Control c in pnlSidebar.Controls)
                 {
-                    if (c is Button btn && btn.Text.Contains("HỆ THỐNG")) btn.Visible = false;
+                    Button btn = c as Button;
+                    if (btn != null && btn.Text.Contains("HỆ THỐNG")) btn.Visible = false;
                 }
 
                 // Xử lý menu Đào tạo: Chỉ hiện TKB

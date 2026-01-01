@@ -8,7 +8,13 @@ namespace QuanLyTrungTam.Utilities
         public int BuoiSo { get; set; }
         public DateTime Ngay { get; set; }
         // Hiển thị lên ComboBox: "Buổi 1 - 22/12/2025 (Thứ Hai)"
-        public string HienThi => $"Buổi {BuoiSo} - {Ngay:dd/MM/yyyy} ({GetThuTiengViet(Ngay.DayOfWeek)})";
+        public string HienThi
+        {
+            get
+            {
+                return string.Format("Buổi {0} - {1:dd/MM/yyyy} ({2})", BuoiSo, Ngay, GetThuTiengViet(Ngay.DayOfWeek));
+            }
+        }
 
         private string GetThuTiengViet(DayOfWeek day)
         {

@@ -13,19 +13,19 @@ namespace QuanLyTrungTam.BUS
         private DashboardBUS() { }
 
         // Wrapper for DashboardDAO
-        public int GetSoLuongHocVien() => DashboardDAO.Instance.GetSoLuongHocVien();
-        public int GetSoLuongLopHoc() => DashboardDAO.Instance.GetSoLuongLopHoc();
-        public int GetSoLuongMon() => DashboardDAO.Instance.GetSoLuongMon();
-        public decimal GetLoiNhuan() => DashboardDAO.Instance.GetLoiNhuan();
-        public int GetSoLuongGiaoVien() => DashboardDAO.Instance.GetSoLuongGiaoVien();
-        public int GetSoLuongTroGiang() => DashboardDAO.Instance.GetSoLuongTroGiang();
-        public int GetSoLuongNoPhi() => DashboardDAO.Instance.GetSoLuongNoPhi();
-        public int GetSoLopChuaDu() => DashboardDAO.Instance.GetSoLopChuaDu();
-        public DataTable GetFinanceChartData() => DashboardDAO.Instance.GetFinanceChartData();
-        public DataTable GetTopClassScores() => DashboardDAO.Instance.GetTopClassScores();
-        public DataTable GetSystemLog() => DashboardDAO.Instance.GetSystemLog();
+        public int GetSoLuongHocVien() { return DashboardDAO.Instance.GetSoLuongHocVien(); }
+        public int GetSoLuongLopHoc() { return DashboardDAO.Instance.GetSoLuongLopHoc(); }
+        public int GetSoLuongMon() { return DashboardDAO.Instance.GetSoLuongMon(); }
+        public decimal GetLoiNhuan() { return DashboardDAO.Instance.GetLoiNhuan(); }
+        public int GetSoLuongGiaoVien() { return DashboardDAO.Instance.GetSoLuongGiaoVien(); }
+        public int GetSoLuongTroGiang() { return DashboardDAO.Instance.GetSoLuongTroGiang(); }
+        public int GetSoLuongNoPhi() { return DashboardDAO.Instance.GetSoLuongNoPhi(); }
+        public int GetSoLopChuaDu() { return DashboardDAO.Instance.GetSoLopChuaDu(); }
+        public DataTable GetFinanceChartData() { return DashboardDAO.Instance.GetFinanceChartData(); }
+        public DataTable GetTopClassScores() { return DashboardDAO.Instance.GetTopClassScores(); }
+        public DataTable GetSystemLog() { return DashboardDAO.Instance.GetSystemLog(); }
 
         // Wrapper for StatsDAO
-        public DataTable GetRevenueBySkill() => StatsDAO.Instance.GetRevenueBySkill();
+        public DataTable GetRevenueBySkill() { return StatsDAO.Instance.GetRevenueBySkill(); }
     }
 }

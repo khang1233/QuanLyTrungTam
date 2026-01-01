@@ -133,12 +133,15 @@ namespace QuanLyTrungTam
             // Event tìm kiếm
             txbSearch.TextChanged += (s, e) =>
             {
-                if (dgvDiem.DataSource is DataTable dt)
+                DataTable dt = dgvDiem.DataSource as DataTable;
+                if (dt != null)
                 {
                     string k = txbSearch.Text.Trim();
                     if (k == "Mã hoặc tên học viên..." || string.IsNullOrEmpty(k)) dt.DefaultView.RowFilter = "";
-                    else dt.DefaultView.RowFilter = $"MaHV LIKE '%{k}%' OR HoTen LIKE '%{k}%'";
+                    else dt.DefaultView.RowFilter = string.Format("MaHV LIKE '%{0}%' OR HoTen LIKE '%{0}%'", k);
                 }
+
+
             };
         }
 
@@ -216,7 +219,8 @@ namespace QuanLyTrungTam
         {
             if (dgvDiem.Columns[e.ColumnIndex].Name == "XepLoai")
             {
-                var cellVal = dgvDiem.Rows[e.RowIndex].Cells["DiemTongKet"]?.Value;
+                var cell = dgvDiem.Rows[e.RowIndex].Cells["DiemTongKet"];
+                var cellVal = cell != null ? cell.Value : null;
                 if (cellVal != null && cellVal != DBNull.Value)
                 {
                     double d = Convert.ToDouble(cellVal);
@@ -261,12 +265,13 @@ namespace QuanLyTrungTam
                     double d2 = GetVal(r.Cells["Diem15p2"].Value);
                     double dGK = GetVal(r.Cells["DiemGiuaKy"].Value);
                     double dCK = GetVal(r.Cells["DiemCuoiKy"].Value);
-                    string ghiChu = r.Cells["GhiChu"].Value?.ToString() ?? "";
+                    string ghiChu = "";
+                    if (r.Cells["GhiChu"].Value != null) ghiChu = r.Cells["GhiChu"].Value.ToString();
 
                     // Validate điểm
                     if (d1 < 0 || d1 > 10 || d2 < 0 || d2 > 10 || dGK < 0 || dGK > 10 || dCK < 0 || dCK > 10)
                     {
-                        MessageBox.Show($"Điểm của {r.Cells["HoTen"].Value} không hợp lệ (0-10)!", "Lỗi nhập liệu");
+                        MessageBox.Show(string.Format("Điểm của {0} không hợp lệ (0-10)!", r.Cells["HoTen"].Value), "Lỗi nhập liệu");
                         return;
                     }
 
@@ -285,7 +290,7 @@ namespace QuanLyTrungTam
 
             if (count > 0)
             {
-                MessageBox.Show($"Đã lưu thành công {count} học viên!", "Thành công");
+                MessageBox.Show(string.Format("Đã lưu thành công {0} học viên!", count), "Thành công");
                 LoadDiem(); // Tải lại để thấy Điểm tổng kết và Xếp loại mới nhất
             }
             else
@@ -302,7 +307,8 @@ namespace QuanLyTrungTam
         private double GetVal(object val)
         {
             if (val == null || val == DBNull.Value || string.IsNullOrWhiteSpace(val.ToString())) return 0;
-            if (double.TryParse(val.ToString(), out double res)) return res;
+            double res;
+            if (double.TryParse(val.ToString(), out res)) return res;
             return 0;
         }
         private void SetPlaceholder(TextBox txt, string holder)

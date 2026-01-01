@@ -19,13 +19,8 @@ namespace QuanLyTrungTam.DAO
         // =================================================================
         public bool CapNhatTrangThaiHocVien(string maHV, string trangThaiMoi)
         {
-            // Dùng string.Format để điền trực tiếp giá trị vào câu lệnh
-            // Lưu ý: N'...' để hỗ trợ tiếng Việt
-            string query = string.Format("UPDATE HocVien SET TrangThai = N'{0}' WHERE MaHV = '{1}'", trangThaiMoi, maHV);
-
-            // Gọi hàm thực thi (không cần truyền mảng object nữa)
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-
+            string query = "UPDATE HocVien SET TrangThai = @tt WHERE MaHV = @ma";
+            int result = DataProvider.Instance.ExecuteNonQuery(query, new object[] { trangThaiMoi, maHV });
             return result > 0;
         }
 
@@ -40,21 +35,27 @@ namespace QuanLyTrungTam.DAO
 
         public DataRow GetInfoHocVien(string maHV)
         {
-            string query = "SELECT * FROM HocVien WHERE MaHV = '" + maHV + "'";
-            DataTable data = DataProvider.Instance.ExecuteQuery(query);
+            string query = "SELECT * FROM HocVien WHERE MaHV = @ma";
+            DataTable data = DataProvider.Instance.ExecuteQuery(query, new object[] { maHV });
             return data.Rows.Count > 0 ? data.Rows[0] : null;
         }
 
         public string GetNewMaHV()
         {
+            // Logic sinh mã: lấy HVxxx
             string query = "SELECT TOP 1 MaHV FROM HocVien ORDER BY MaHV DESC";
             object result = DataProvider.Instance.ExecuteScalar(query);
             if (result == null || result == DBNull.Value) return "HV001";
 
             string lastMa = result.ToString();
-            // Giả sử mã dạng HV001, lấy số từ vị trí index 2
-            int nextID = int.Parse(lastMa.Substring(2)) + 1;
-            return "HV" + nextID.ToString("D3");
+            // Expected format: HVxxx
+            int nextID;
+            if (lastMa.Length > 2 && int.TryParse(lastMa.Substring(2), out nextID))
+            {
+                 // Tăng 1 và format lại thành 3 chữ số
+                return "HV" + (nextID + 1).ToString("D3");
+            }
+            return "HV001";
         }
 
         public bool InsertHocVien(string ma, string ten, DateTime ngaySinh, string sdt, string email, string diaChi, string trangThai)
@@ -73,36 +74,33 @@ namespace QuanLyTrungTam.DAO
 
         public bool DeleteHocVien(string maHV)
         {
-            // Gọi Stored Procedure xóa (nếu bạn đã tạo SP này trong SQL)
-            // Nếu chưa có SP, bạn có thể đổi thành: "DELETE FROM HocVien WHERE MaHV = @ma" (nhưng coi chừng ràng buộc khóa ngoại)
-            string query = "EXEC USP_XoaHocVien @MaHV";
-            object result = DataProvider.Instance.ExecuteScalar(query, new object[] { maHV });
-
-            if (result != null && int.TryParse(result.ToString(), out int res))
-            {
-                return res == 1;
-            }
-            return false;
+            // Check dependency first if needed, or rely on Cascade/SP
+            // Using parameterized delete
+            string query = "DELETE FROM HocVien WHERE MaHV = @ma";
+             // If you have a SP, use: "EXEC USP_XoaHocVien @ma"
+            
+            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { maHV }) > 0;
         }
 
         public bool UpdateEmailHocVien(string maHV, string email)
         {
-            string check = "SELECT COUNT(*) FROM HocVien WHERE Email = '" + email + "' AND MaHV != '" + maHV + "'";
-            int count = (int)DataProvider.Instance.ExecuteScalar(check);
+            string check = "SELECT COUNT(*) FROM HocVien WHERE Email = @email AND MaHV != @ma";
+            int count = (int)DataProvider.Instance.ExecuteScalar(check, new object[] { email, maHV });
             if (count > 0) return false;
 
-            string query = string.Format("UPDATE HocVien SET Email = '{0}' WHERE MaHV = '{1}'", email, maHV);
-            return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            string query = "UPDATE HocVien SET Email = @email WHERE MaHV = @ma";
+            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { email, maHV }) > 0;
         }
 
         public DataTable GetLearningHistory(string maHV)
         {
-            string query = "SELECT k.TenKyNang, l.TenLop, d.NgayDangKy, l.TrangThai as TinhTrangLop " +
-                           "FROM DangKy d " +
-                           "JOIN LopHoc l ON d.MaLop = l.MaLop " +
-                           "JOIN KyNang k ON l.MaKyNang = k.MaKyNang " +
-                           "WHERE d.MaHV = '" + maHV + "'";
-            return DataProvider.Instance.ExecuteQuery(query);
+            string query = @"SELECT k.TenKyNang, l.TenLop, d.NgayDangKy, l.TrangThai as TinhTrangLop 
+                           FROM DangKy d 
+                           JOIN LopHoc l ON d.MaLop = l.MaLop 
+                           JOIN KyNang k ON l.MaKyNang = k.MaKyNang 
+                           WHERE d.MaHV = @ma";
+            
+            return DataProvider.Instance.ExecuteQuery(query, new object[] { maHV });
         }
     }
 }

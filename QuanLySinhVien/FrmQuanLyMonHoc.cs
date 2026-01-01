@@ -147,7 +147,7 @@ namespace QuanLyTrungTam
         private void UpdateHocPhi(object sender, EventArgs e)
         {
             decimal tong = numSoBuoi.Value * numDonGia.Value;
-            lblTongHocPhi.Text = $"TỔNG HỌC PHÍ: {tong:N0} VNĐ";
+            lblTongHocPhi.Text = string.Format("TỔNG HỌC PHÍ: {0:N0} VNĐ", tong);
         }
 
         void LoadData()
@@ -276,7 +276,7 @@ namespace QuanLyTrungTam
         private void BtnXoa_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(curMaKN)) return;
-            if (MessageBox.Show($"Xóa môn {txbTen.Text}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show(string.Format("Xóa môn {0}?", txbTen.Text), "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 // [REFACTOR] Dùng KyNangBUS
                 if (KyNangBUS.Instance.DeleteKyNang(curMaKN)) { MessageBox.Show("Đã xóa."); LoadData(); ResetForm(); }

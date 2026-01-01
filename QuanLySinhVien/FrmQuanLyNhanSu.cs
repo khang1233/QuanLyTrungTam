@@ -220,7 +220,7 @@ namespace QuanLyTrungTam
         private void FilterData(string key)
         {
             DataTable dt = ui_dgvNhanSu.DataSource as DataTable;
-            if (dt != null) dt.DefaultView.RowFilter = $"HoTen LIKE '%{key}%' OR MaNS LIKE '%{key}%'";
+            if (dt != null) dt.DefaultView.RowFilter = string.Format("HoTen LIKE '%{0}%' OR MaNS LIKE '%{0}%'", key);
         }
 
         private void ResetForm()
@@ -280,7 +280,7 @@ namespace QuanLyTrungTam
         private void BtnXoa_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(currentMaNS)) return;
-            if (MessageBox.Show($"Bạn có chắc muốn xóa nhân sự {currentMaNS}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show(string.Format("Bạn có chắc muốn xóa nhân sự {0}?", currentMaNS), "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 // [REFACTOR] NhanVienBUS
                 if (NhanVienBUS.Instance.DeleteNhanVien(currentMaNS))
@@ -300,7 +300,7 @@ namespace QuanLyTrungTam
 
             // [REFACTOR] AccountBUS
             if (AccountBUS.Instance.InsertAccount(currentMaNS, "123", quyen, currentMaNS))
-                MessageBox.Show($"Cấp TK thành công!\nUser: {currentMaNS}\nPass: 123");
+                MessageBox.Show(string.Format("Cấp TK thành công!\nUser: {0}\nPass: 123", currentMaNS));
             else
                 MessageBox.Show("Nhân sự này đã có tài khoản rồi!");
         }

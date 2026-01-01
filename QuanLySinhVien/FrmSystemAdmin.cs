@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using QuanLyTrungTam.BUS; // [REFACTOR]
-using QuanLyTrungTam.DAO; // Keep for now if DTO/DAO usage elsewhere? Ideally remove if possible. But wait, AccountBUS is in BUS.
-                           // Helper DTOs might be used? No, just DataTables.
+using QuanLyTrungTam.BUS;
+using QuanLyTrungTam.DAO;
 
 namespace QuanLyTrungTam
 {
@@ -92,14 +91,11 @@ namespace QuanLyTrungTam
             // Check if column is boolean or int
             var val = dgvAccounts.CurrentRow.Cells["TrangThai"].Value;
             bool currentStatus = false;
-            if (val is bool b) currentStatus = b;
-            else if (val is int i) currentStatus = (i == 1);
+            if (val is bool) currentStatus = (bool)val;
+            else if (val is int) currentStatus = ((int)val == 1);
             else if (val.ToString() == "1" || val.ToString().ToLower() == "true" || val.ToString() == "Hoạt động") currentStatus = true;
 
             // [REFACTOR] Dùng AccountBUS
-            // AccountBUS.UpdateStatus accepts (string, int) or (string, bool).
-            // Logic cũ: UpdateStatus(user, currentStatus ? 0 : 1) -> Passing Int.
-            // Let's use the Int overload if BUS has it. BUS has UpdateStatus(string, int).
             AccountBUS.Instance.UpdateStatus(user, currentStatus ? 0 : 1);
             LoadData();
         }
@@ -109,7 +105,7 @@ namespace QuanLyTrungTam
             if (dgvAccounts.CurrentRow == null) return;
             string user = dgvAccounts.CurrentRow.Cells["TenDangNhap"].Value.ToString();
 
-            if (MessageBox.Show($"Bạn có muốn reset mật khẩu của {user} về 123?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (MessageBox.Show(string.Format("Bạn có muốn reset mật khẩu của {0} về 123?", user), "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 // [REFACTOR] Dùng AccountBUS
                 AccountBUS.Instance.ResetPass(user);
