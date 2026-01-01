@@ -88,6 +88,9 @@ Minh bạch hóa dòng tiền và hỗ trợ thu phí hiện đại.
 | **Học viên** | `HV06` | `1` |
 
 ---
-**Tác giả:** [Tên của bạn]  
-Email: [Email của bạn]  
-*Nếu thấy dự án hữu ích, hãy để lại 1 Star nhé! ⭐*
+**Tác giả:** Nhóm gồm 4 thành viên:
+-Trần Minh Khang
+-Lê Viết Huy
+-Phạm Gia Huy
+-Nguyễn Phi Phúc
+
