@@ -47,7 +47,7 @@ namespace QuanLyTrungTam
             {
                 Text = "BÁO CÁO TÀI CHÍNH",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                ForeColor = Color.Navy,
+                ForeColor = Color.FromArgb(33, 150, 243), // Blue
                 AutoSize = true,
                 Location = new Point(20, 15)
             };
@@ -58,16 +58,16 @@ namespace QuanLyTrungTam
             // Set ngày về mùng 1 đầu tháng
             dtpFrom.Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-            Label lblDen = new Label { Text = "Đến ngày:", Location = new Point(230, 60), AutoSize = true, Font = new Font("Segoe UI", 10) };
-            dtpTo = new DateTimePicker { Location = new Point(300, 57), Width = 120, Format = DateTimePickerFormat.Short, Font = new Font("Segoe UI", 10) };
+            Label lblDen = new Label { Text = "Đến ngày:", Location = new Point(250, 60), AutoSize = true, Font = new Font("Segoe UI", 10) };
+            dtpTo = new DateTimePicker { Location = new Point(330, 57), Width = 120, Format = DateTimePickerFormat.Short, Font = new Font("Segoe UI", 10) };
 
             // Nút Xem
             btnXem = new Button
             {
                 Text = "🔍 Xem Kết Quả",
-                Location = new Point(440, 55),
+                Location = new Point(480, 55),
                 Size = new Size(140, 32),
-                BackColor = Color.DodgerBlue,
+                BackColor = Color.FromArgb(33, 150, 243), // Blue
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
@@ -80,7 +80,7 @@ namespace QuanLyTrungTam
             {
                 Location = new Point(700, 15),
                 Size = new Size(350, 70),
-                BackColor = Color.MintCream,
+                BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
             };
 
@@ -101,7 +101,7 @@ namespace QuanLyTrungTam
                 Width = 330,
                 Height = 35,
                 Font = new Font("Segoe UI", 18, FontStyle.Bold),
-                ForeColor = Color.SeaGreen,
+                ForeColor = Color.FromArgb(40, 167, 69), // Green
                 TextAlign = ContentAlignment.MiddleRight
             };
 
@@ -127,10 +127,12 @@ namespace QuanLyTrungTam
             // Style Grid
             dgvHistory.ColumnHeadersHeight = 40;
             dgvHistory.EnableHeadersVisualStyles = false;
-            dgvHistory.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgvHistory.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
             dgvHistory.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgvHistory.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgvHistory.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            dgvHistory.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgvHistory.DefaultCellStyle.SelectionForeColor = Color.Black;
             dgvHistory.RowTemplate.Height = 35;
 
             pnlBody.Controls.Add(dgvHistory);

@@ -31,22 +31,30 @@ namespace QuanLyTrungTam
         }
 
         // =================================================================================
-        // 1. THIẾT KẾ GIAO DIỆN (GIỮ NGUYÊN CODE CỦA BẠN)
+        // 1. THIẾT KẾ GIAO DIỆN (ĐÃ REFACTOR)
         // =================================================================================
         private void SetupBetterUI()
         {
-            this.Text = "Tra Cứu Thu Học Phí";
-            this.BackColor = Color.WhiteSmoke;
+            this.Text = "Tra Cứu & Thu Học Phí";
+            this.BackColor = Color.FromArgb(240, 242, 245);
             this.WindowState = FormWindowState.Maximized;
             this.Font = new Font("Segoe UI", 10F);
 
             // --- A. HEADER ---
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.White, Padding = new Padding(20, 10, 20, 10) };
-            Label lblTitle = new Label { Text = "TRA CỨU HỌC VIÊN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = ColorTranslator.FromHtml("#009688"), AutoSize = true, Location = new Point(20, 15) };
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White, Padding = new Padding(20, 0, 20, 0) };
+            Label lblTitle = new Label { 
+                Text = "TRA CỨU & THU HỌC PHÍ", 
+                Font = new Font("Segoe UI", 18, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(33, 150, 243), 
+                AutoSize = true, 
+                TextAlign = ContentAlignment.MiddleLeft 
+            };
+            lblTitle.Location = new Point(20, (pnlHeader.Height - lblTitle.Height) / 2);
 
-            txbSearch.Location = new Point(350, 18);
+            txbSearch.Location = new Point(350, 20);
             txbSearch.Width = 400;
             txbSearch.Font = new Font("Segoe UI", 11);
+            txbSearch.BorderStyle = BorderStyle.FixedSingle;
             SetPlaceholder(txbSearch, "🔍 Nhập tên hoặc mã học viên...");
             txbSearch.TextChanged += Logic_SearchHV;
 
@@ -54,66 +62,92 @@ namespace QuanLyTrungTam
             this.Controls.Add(pnlHeader);
 
             // --- B. BODY ---
-            SplitContainer split = new SplitContainer { Dock = DockStyle.Fill, SplitterWidth = 10, BackColor = Color.WhiteSmoke };
-            split.Width = 1200;
+            SplitContainer split = new SplitContainer { Dock = DockStyle.Fill, SplitterWidth = 10, BackColor = Color.FromArgb(240, 242, 245) };
             split.FixedPanel = FixedPanel.Panel1;
-            split.Panel1MinSize = 350;
-            split.SplitterDistance = 400;
-            split.Panel2MinSize = 350;
+            split.SplitterDistance = 450; 
 
-            // TRÁI
-            GroupBox grpList = new GroupBox { Text = " Danh sách học viên ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray };
-            grpList.Padding = new Padding(10);
+            // TRÁI (DANH SÁCH)
+            Panel pnlLeft = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 5, 10) };
+            GroupBox grpList = new GroupBox { 
+                Text = "Danh Sách Học Viên", 
+                Dock = DockStyle.Fill, 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                ForeColor = Color.DimGray,
+                BackColor = Color.White
+            };
+            // Inner padding for GroupBox
+            Panel pnlGridWrap = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
             StyleGrid(dgvSearchResult);
             dgvSearchResult.CellClick += Logic_ChonHV;
-            grpList.Controls.Add(dgvSearchResult);
-            split.Panel1.Controls.Add(grpList);
-            split.Panel1.Padding = new Padding(10);
+            pnlGridWrap.Controls.Add(dgvSearchResult);
+            grpList.Controls.Add(pnlGridWrap);
+            pnlLeft.Controls.Add(grpList);
+            split.Panel1.Controls.Add(pnlLeft);
 
-            // PHẢI
-            Panel pnlRightContent = new Panel { Dock = DockStyle.Fill };
+            // PHẢI (CHI TIẾT & THANH TOÁN)
+            Panel pnlRight = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5, 10, 10, 10) };
+            Panel pnlRightContent = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
-            GroupBox grpLop = new GroupBox { Text = " Các lớp đang theo học ", Dock = DockStyle.Top, Height = 250, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray };
-            grpLop.Padding = new Padding(10);
+            // 1. Các lớp đang học
+            GroupBox grpLop = new GroupBox { 
+                Text = "Các Lớp Đang Theo Học", 
+                Dock = DockStyle.Top, 
+                Height = 300, 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                ForeColor = Color.DimGray,
+                BackColor = Color.White
+            };
+            Panel pnlLopWrap = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
             StyleGrid(dgvLopHoc);
-            grpLop.Controls.Add(dgvLopHoc);
+            pnlLopWrap.Controls.Add(dgvLopHoc);
+            grpLop.Controls.Add(pnlLopWrap);
 
-            Panel pnlDebt = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            // 2. Tài chính & Thanh toán
+            Panel pnlFinance = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Margin = new Padding(0, 10, 0, 0) };
+            // -- Label Tài Chính
             lblTaiChinh.Dock = DockStyle.Fill;
             lblTaiChinh.TextAlign = ContentAlignment.MiddleCenter;
             lblTaiChinh.Font = new Font("Segoe UI", 14);
             lblTaiChinh.Text = "👈 Vui lòng chọn học viên từ danh sách bên trái";
-            pnlDebt.Controls.Add(lblTaiChinh);
+            
+            // -- Panel Thanh Toán (Bottom of Finance)
+            Panel pnlPay = new Panel { Dock = DockStyle.Bottom, Height = 100, BackColor = Color.WhiteSmoke }; // Light Gray
+            pnlPay.Paint += (s, e) => e.Graphics.DrawLine(Pens.Silver, 0, 0, pnlPay.Width, 0); // Top Border
 
-            Panel pnlPay = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = ColorTranslator.FromHtml("#E8F5E9") };
-            pnlPay.BorderStyle = BorderStyle.FixedSingle;
-            Label lblPayTitle = new Label { Text = "Thu Phí:", Location = new Point(30, 28), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
-
-            txbDongTien.Location = new Point(120, 25);
-            txbDongTien.Width = 200;
-            txbDongTien.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            Label lblPayTitle = new Label { Text = "THU PHÍ:", Location = new Point(30, 35), AutoSize = true, Font = new Font("Segoe UI", 12, FontStyle.Bold) };
+            
+            txbDongTien.Location = new Point(130, 32);
+            txbDongTien.Width = 250;
+            txbDongTien.Font = new Font("Segoe UI", 14, FontStyle.Bold);
             txbDongTien.ForeColor = Color.DarkRed;
             txbDongTien.TextAlign = HorizontalAlignment.Right;
+            txbDongTien.BorderStyle = BorderStyle.FixedSingle;
 
-            Button btnPay = new Button { Text = "XÁC NHẬN THU", Location = new Point(340, 22), Size = new Size(160, 35) };
-            btnPay.FlatStyle = FlatStyle.Flat;
+            Button btnPay = new Button { 
+                Text = "XÁC NHẬN THU", 
+                Location = new Point(410, 30), 
+                Size = new Size(180, 40),
+                BackColor = Color.FromArgb(40, 167, 69), // Green
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
             btnPay.FlatAppearance.BorderSize = 0;
-            btnPay.BackColor = ColorTranslator.FromHtml("#FFC107");
-            btnPay.ForeColor = Color.Black;
-            btnPay.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            btnPay.Cursor = Cursors.Hand;
-
-            // GẮN SỰ KIỆN THANH TOÁN
             btnPay.Click += Logic_ThanhToanTrucTiep;
 
             pnlPay.Controls.AddRange(new Control[] { lblPayTitle, txbDongTien, btnPay });
 
-            pnlRightContent.Controls.Add(pnlDebt);
-            pnlRightContent.Controls.Add(pnlPay);
-            pnlRightContent.Controls.Add(grpLop);
+            pnlFinance.Controls.Add(lblTaiChinh); // Fill
+            pnlFinance.Controls.Add(pnlPay);      // Bottom
 
-            split.Panel2.Controls.Add(pnlRightContent);
-            split.Panel2.Padding = new Padding(0, 10, 10, 10);
+            // Add to Right Content
+            pnlRightContent.Controls.Add(pnlFinance);
+            pnlRightContent.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 }); // Spacer
+            pnlRightContent.Controls.Add(grpLop); // Top
+
+            pnlRight.Controls.Add(pnlRightContent);
+            split.Panel2.Controls.Add(pnlRight);
 
             this.Controls.Add(split);
             this.Controls.Add(pnlHeader);
@@ -131,16 +165,19 @@ namespace QuanLyTrungTam
             dgv.AllowUserToAddRows = false;
             dgv.ReadOnly = true;
             dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.RowTemplate.Height = 35;
+            dgv.RowTemplate.Height = 40;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = ColorTranslator.FromHtml("#009688");
+
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243); // Modern Blue
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            dgv.ColumnHeadersHeight = 40;
+            dgv.ColumnHeadersHeight = 45;
+
             dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10);
             dgv.DefaultCellStyle.ForeColor = Color.Black;
-            dgv.DefaultCellStyle.SelectionBackColor = ColorTranslator.FromHtml("#B2DFDB");
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
             dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgv.GridColor = Color.WhiteSmoke;
         }
 
         // =================================================================================

@@ -41,7 +41,7 @@ namespace QuanLyTrungTam
 
             // HEADER
             Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White };
-            Label lblTitle = new Label { Text = "TRA CỨU HỌC VIÊN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = ColorTranslator.FromHtml("#009688"), AutoSize = true, Location = new Point(20, 22) };
+            Label lblTitle = new Label { Text = "TRA CỨU HỌC VIÊN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.FromArgb(33, 150, 243), AutoSize = true, Location = new Point(20, 22) };
             txbSearch.Location = new Point(350, 22); txbSearch.Width = 400; txbSearch.Font = new Font("Segoe UI", 11);
             SetPlaceholder(txbSearch, "🔍 Nhập tên hoặc mã học viên...");
             txbSearch.TextChanged += Logic_SearchHV;
@@ -75,9 +75,9 @@ namespace QuanLyTrungTam
             pnlDebt.Controls.Add(lblTaiChinh);
 
             // PANEL THANH TOÁN
-            Panel pnlPay = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = ColorTranslator.FromHtml("#E8F5E9") };
+            Panel pnlPay = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = Color.WhiteSmoke };
             pnlPay.BorderStyle = BorderStyle.FixedSingle;
-            btnLapHoaDon = new Button { Text = "📝 LẬP HÓA ĐƠN THANH TOÁN", Dock = DockStyle.Fill, BackColor = ColorTranslator.FromHtml("#FF9800"), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 14, FontStyle.Bold), Cursor = Cursors.Hand };
+            btnLapHoaDon = new Button { Text = "📝 LẬP HÓA ĐƠN THANH TOÁN", Dock = DockStyle.Fill, BackColor = Color.FromArgb(40, 167, 69), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 14, FontStyle.Bold), Cursor = Cursors.Hand };
             Panel pnlBtnContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(200, 15, 200, 15), BackColor = Color.Transparent };
             pnlBtnContainer.Controls.Add(btnLapHoaDon);
             btnLapHoaDon.Click += BtnLapHoaDon_Click;
@@ -100,9 +100,11 @@ namespace QuanLyTrungTam
             dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect; dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgv.RowHeadersVisible = false; dgv.ReadOnly = true; dgv.RowTemplate.Height = 35;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = ColorTranslator.FromHtml("#009688");
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
             dgv.ColumnHeadersHeight = 40;
         }
 
@@ -131,6 +133,8 @@ namespace QuanLyTrungTam
             SafeSetHeader(dgvSearchResult, "MaHV", "Mã HV");
             SafeSetHeader(dgvSearchResult, "HoTen", "Họ Tên");
             SafeSetHeader(dgvSearchResult, "TrangThaiHocPhi", "Học Phí");
+            SafeSetHeader(dgvSearchResult, "GioiTinh", "Giới Tính");
+            SafeSetHeader(dgvSearchResult, "TrangThai", "Trạng Thái");
 
             string[] colsToHide = { "DiaChi", "NgaySinh", "Email", "NgayGiaNhap", "MaLop", "MaKyNang", "SoDienThoai" };
             foreach (string col in colsToHide) SafeSetVisible(dgvSearchResult, col, false);
@@ -155,10 +159,15 @@ namespace QuanLyTrungTam
 
                 SafeSetHeader(dgvLopHoc, "TenKyNang", "Môn Học");
                 SafeSetHeader(dgvLopHoc, "TenLop", "Lớp");
+                SafeSetHeader(dgvLopHoc, "MaLop", "Mã Lớp");
+                SafeSetHeader(dgvLopHoc, "CaHoc", "Ca Học");
+                SafeSetHeader(dgvLopHoc, "NgayBatDau", "Ngày Bắt Đầu");
                 SafeSetHeader(dgvLopHoc, "HocPhiLop", "Học Phí");
-                if (dgvLopHoc.Columns.Contains("HocPhiLop")) dgvLopHoc.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
 
-                SafeSetVisible(dgvLopHoc, "NgayDangKy", false);
+                if (dgvLopHoc.Columns.Contains("HocPhiLop")) dgvLopHoc.Columns["HocPhiLop"].DefaultCellStyle.Format = "N0";
+                if (dgvLopHoc.Columns.Contains("NgayBatDau")) dgvLopHoc.Columns["NgayBatDau"].DefaultCellStyle.Format = "dd/MM/yyyy";
+                if (dgvLopHoc.Columns.Contains("NgayDangKy")) dgvLopHoc.Columns["NgayDangKy"].Visible = false;
+
                 UpdateFinanceInfo(tenHV);
             }
         }
@@ -356,7 +365,7 @@ namespace QuanLyTrungTam
                 Text = "🖨️ XÁC NHẬN IN PHIẾU",
                 Location = new Point(100, 50),
                 Size = new Size(350, 40),
-                BackColor = Color.Navy,
+                BackColor = Color.FromArgb(33, 150, 243),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),

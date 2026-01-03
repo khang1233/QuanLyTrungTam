@@ -18,7 +18,7 @@ namespace QuanLyTrungTam
         private Button btnLogin, btnGoogle;
 
         // ===== COLORS =====
-        private readonly Color colorPrimary = ColorTranslator.FromHtml("#009688"); // Xanh Teal
+        private readonly Color colorPrimary = Color.FromArgb(33, 150, 243); // Blue #2196F3
         private readonly Color colorSecondary = ColorTranslator.FromHtml("#2c3e50"); // Xanh Đen
 
         public Form1()

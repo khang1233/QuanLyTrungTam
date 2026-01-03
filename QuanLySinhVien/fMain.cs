@@ -72,9 +72,9 @@ namespace QuanLyTrungTam
             this.Controls.Add(pnlSidebar);
 
             // B. HEADER
-            pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.FromArgb(0, 150, 136) };
+            pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White };
             this.Controls.Add(pnlHeader);
-            lblHeaderTitle = new Label { Text = "TRANG CHỦ", ForeColor = Color.White, Font = new Font("Segoe UI", 15, FontStyle.Bold), AutoSize = true, Location = new Point(25, 20) };
+            lblHeaderTitle = new Label { Text = "TRANG CHỦ", ForeColor = Color.FromArgb(33, 150, 243), Font = new Font("Segoe UI", 15, FontStyle.Bold), AutoSize = true, Location = new Point(25, 20) };
             pnlHeader.Controls.Add(lblHeaderTitle);
 
             // C. BODY
@@ -176,7 +176,7 @@ namespace QuanLyTrungTam
             {
                 DisableButton();
                 currentButton = (Button)btnSender;
-                currentButton.BackColor = Color.FromArgb(0, 150, 136);
+                currentButton.BackColor = Color.FromArgb(33, 150, 243); // Blue
                 currentButton.ForeColor = Color.White;
             }
         }

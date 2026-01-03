@@ -29,7 +29,7 @@ namespace QuanLyTrungTam
             btnLinkGG.Click += BtnLinkGG_Click; // Gắn sự kiện
 
             this.Controls.Add(btnLinkGG);
-            Label lblTitle = new Label { Text = "THÔNG TIN CÁ NHÂN", Font = new Font("Arial", 16, FontStyle.Bold), ForeColor = Color.Blue, AutoSize = true, Location = new Point(130, 20) };
+            Label lblTitle = new Label { Text = "THÔNG TIN CÁ NHÂN", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.FromArgb(33, 150, 243), AutoSize = true, Location = new Point(130, 20) };
 
             // Các Label hiển thị thông tin
             Label lblUser = new Label { Text = "Tên đăng nhập: " + loginAccount.TenDangNhap, Location = new Point(50, 70), AutoSize = true, Font = new Font("Arial", 10) };
@@ -43,9 +43,10 @@ namespace QuanLyTrungTam
             grpInfo.Controls.Add(lblExtra);
 
             // Các nút chức năng
-            Button btnChangePass = new Button { Text = "Đổi mật khẩu", Location = new Point(50, 300), Size = new Size(120, 40), BackColor = Color.Orange, ForeColor = Color.White };
-            Button btnLogout = new Button { Text = "Đăng xuất", Location = new Point(180, 300), Size = new Size(120, 40), BackColor = Color.Red, ForeColor = Color.White };
-            Button btnClose = new Button { Text = "Đóng", Location = new Point(310, 300), Size = new Size(100, 40) };
+            // Các nút chức năng
+            Button btnChangePass = new Button { Text = "Đổi mật khẩu", Location = new Point(50, 300), Size = new Size(120, 40), BackColor = Color.FromArgb(33, 150, 243), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            Button btnLogout = new Button { Text = "Đăng xuất", Location = new Point(180, 300), Size = new Size(120, 40), BackColor = Color.IndianRed, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            Button btnClose = new Button { Text = "Đóng", Location = new Point(310, 300), Size = new Size(100, 40), BackColor = Color.WhiteSmoke, FlatStyle = FlatStyle.Flat };
 
             // Gán sự kiện
             btnChangePass.Click += BtnChangePass_Click;

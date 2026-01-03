@@ -29,42 +29,84 @@ namespace QuanLyTrungTam
             this.Controls.Clear();
             this.Text = "Điểm Danh Lớp Học Theo Lịch";
             this.Size = new Size(1100, 650);
-            this.BackColor = Color.White;
+            this.BackColor = Color.FromArgb(240, 242, 245); // Soft Gray Background
 
-            Panel pnlTop = new Panel { Dock = DockStyle.Top, Height = 100, BackColor = Color.WhiteSmoke };
-
-            Label lblLop = new Label { Text = "Chọn Lớp:", Location = new Point(20, 25), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            cbLop = new ComboBox { Location = new Point(100, 22), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
+            // --- HEADER PANEL ---
+            Panel pnlTop = new Panel { Dock = DockStyle.Top, Height = 90, BackColor = Color.White };
+            
+            // Labels
+            Label lblLop = new Label { Text = "Lớp học:", Location = new Point(20, 25), AutoSize = true, Font = new Font("Segoe UI", 10) };
+            Label lblBuoi = new Label { Text = "Buổi học:", Location = new Point(320, 25), AutoSize = true, Font = new Font("Segoe UI", 10) };
+            
+            // Comboboxes
+            cbLop = new ComboBox { Location = new Point(85, 22), Width = 220, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
             cbLop.SelectedIndexChanged += CbLop_SelectedIndexChanged;
+            
+            cbBuoi = new ComboBox { Location = new Point(390, 22), Width = 220, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
 
-            Label lblBuoi = new Label { Text = "Chọn Buổi:", Location = new Point(370, 25), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            cbBuoi = new ComboBox { Location = new Point(450, 22), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
-
-            btnLoad = new Button { Text = "TẢI DANH SÁCH", Location = new Point(720, 20), Size = new Size(140, 32), BackColor = Color.Teal, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
+            // Buttons
+            btnLoad = new Button { 
+                Text = "Tải Danh Sách", 
+                Location = new Point(630, 20), 
+                Size = new Size(130, 32), 
+                BackColor = Color.FromArgb(33, 150, 243), // Blue
+                ForeColor = Color.White, 
+                FlatStyle = FlatStyle.Flat, 
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnLoad.FlatAppearance.BorderSize = 0;
             btnLoad.Click += BtnLoad_Click;
 
-            Label lblSearch = new Label { Text = "Tìm nhanh:", Location = new Point(20, 65), AutoSize = true, Font = new Font("Segoe UI", 9) };
-            txbSearch = new TextBox { Location = new Point(100, 62), Width = 250, Font = new Font("Segoe UI", 9) };
-            txbSearch.TextChanged += (s, e) => FilterGrid();
+            // Search
+            Label lblSearch = new Label { Text = "🔍", Location = new Point(20, 62), AutoSize = true, Font = new Font("Segoe UI", 10) };
+            txbSearch = new TextBox { Location = new Point(85, 60), Width = 525, Font = new Font("Segoe UI", 10), BorderStyle = BorderStyle.FixedSingle };
+            txbSearch.Tag = "Tìm kiếm học viên...";
+            txbSearch.Text = (string)txbSearch.Tag;
+            txbSearch.ForeColor = Color.Gray;
+            
+            txbSearch.Enter += (s, e) => { if (txbSearch.Text == (string)txbSearch.Tag) { txbSearch.Text = ""; txbSearch.ForeColor = Color.Black; } };
+            txbSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txbSearch.Text)) { txbSearch.Text = (string)txbSearch.Tag; txbSearch.ForeColor = Color.Gray; } };
+            txbSearch.TextChanged += (s, e) => { if(txbSearch.ForeColor == Color.Black) FilterGrid(); };
 
-            btnSave = new Button { Text = "LƯU KẾT QUẢ", Location = new Point(900, 20), Size = new Size(150, 60), BackColor = Color.OrangeRed, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            // Save Button (Big)
+            btnSave = new Button { 
+                Text = "💾 LƯU ĐIỂM DANH", 
+                Location = new Point(800, 20), 
+                Size = new Size(180, 50), 
+                BackColor = Color.FromArgb(40, 167, 69), // Green
+                ForeColor = Color.White, 
+                FlatStyle = FlatStyle.Flat, 
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += BtnSave_Click;
 
             pnlTop.Controls.AddRange(new Control[] { lblLop, cbLop, lblBuoi, cbBuoi, btnLoad, lblSearch, txbSearch, btnSave });
 
+            // --- GRID ---
             dgvDiemDanh = new DataGridView();
             dgvDiemDanh.Dock = DockStyle.Fill;
             dgvDiemDanh.BackgroundColor = Color.White;
+            dgvDiemDanh.BorderStyle = BorderStyle.None;
             dgvDiemDanh.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvDiemDanh.AllowUserToAddRows = false;
             dgvDiemDanh.RowHeadersVisible = false;
-            dgvDiemDanh.ColumnHeadersHeight = 40;
-            dgvDiemDanh.ColumnHeadersDefaultCellStyle.BackColor = Color.Teal;
+            dgvDiemDanh.ColumnHeadersHeight = 45;
+            
+            dgvDiemDanh.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243); // Blue Header
             dgvDiemDanh.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgvDiemDanh.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgvDiemDanh.EnableHeadersVisualStyles = false;
+            
+            dgvDiemDanh.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            dgvDiemDanh.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgvDiemDanh.DefaultCellStyle.SelectionForeColor = Color.Black;
             dgvDiemDanh.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvDiemDanh.RowTemplate.Height = 35;
 
+            // Layout
             this.Controls.Add(dgvDiemDanh);
             this.Controls.Add(pnlTop);
         }

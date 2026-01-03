@@ -28,21 +28,30 @@ namespace QuanLyTrungTam
         private void SetupCustomUI()
         {
             this.Controls.Clear();
-            this.BackColor = Color.White;
-            this.Size = new Size(1250, 780);
+            this.BackColor = Color.FromArgb(240, 242, 245); // Soft gray background
+            this.Size = new Size(1280, 800);
+            this.Padding = new Padding(10); // Window padding
 
             // --- A. HEADER ---
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 150, 136) };
-            Label lblTitle = new Label { Text = "QUẢN LÝ LỚP HỌC & XẾP LỊCH", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 15) };
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White, Padding = new Padding(20, 0, 20, 0) };
+            Label lblTitle = new Label { 
+                Text = "QUẢN LÝ LỚP HỌC & XẾP LỊCH", 
+                Font = new Font("Segoe UI", 18, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(33, 150, 243), // Modern Blue
+                AutoSize = true, 
+                TextAlign = ContentAlignment.MiddleLeft 
+            };
+            lblTitle.Location = new Point(20, (pnlHeader.Height - lblTitle.Height) / 2);
             pnlHeader.Controls.Add(lblTitle);
 
             // --- B. INPUT PANEL ---
-            Panel pnlInput = new Panel { Dock = DockStyle.Top, Height = 360, BackColor = Color.WhiteSmoke };
+            Panel pnlInput = new Panel { Dock = DockStyle.Top, Height = 380, BackColor = Color.Transparent, Padding = new Padding(0, 15, 0, 15) };
 
-            txbMaLop = new TextBox { ReadOnly = true, BackColor = Color.LightYellow };
-            txbTenLop = new TextBox();
-
-            cbThu = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+            // Initialize controls
+            txbMaLop = new TextBox { ReadOnly = true, BackColor = Color.WhiteSmoke, BorderStyle = BorderStyle.FixedSingle };
+            txbTenLop = new TextBox { BorderStyle = BorderStyle.FixedSingle };
+            
+            cbThu = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
             cbThu.Items.AddRange(new string[] {
                 "T2 (Thứ Hai)", "T3 (Thứ Ba)", "T4 (Thứ Tư)", "T5 (Thứ Năm)", "T6 (Thứ Sáu)", "T7 (Thứ Bảy)", "CN (Chủ Nhật)",
                 "T2-T4", "T2-T5", "T2-T6", "T3-T5", "T3-T6", "T4-T6", "T5-T7", "T7-CN",
@@ -50,7 +59,7 @@ namespace QuanLyTrungTam
             });
             cbThu.SelectedIndex = 0;
 
-            cbCaHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+            cbCaHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
             cbCaHoc.Items.AddRange(new string[] {
                 "Ca 1 (08:00 - 10:00)", "Ca 2 (10:00 - 12:00)",
                 "Ca 3 (13:30 - 15:30)", "Ca 4 (15:30 - 17:30)",
@@ -58,15 +67,14 @@ namespace QuanLyTrungTam
             });
             cbCaHoc.SelectedIndex = 0;
 
-            txbSearch = new TextBox(); SetPlaceholder(txbSearch, "Tìm kiếm...");
+            txbSearch = new TextBox { BorderStyle = BorderStyle.FixedSingle }; SetPlaceholder(txbSearch, "Tìm kiếm lớp học...");
 
-            cbMonHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbGiaoVien = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbTroGiang = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbPhongHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+            cbMonHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
+            cbGiaoVien = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
+            cbTroGiang = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
+            cbPhongHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
+            cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
             
-            // Use Constants for Status
             cbTrangThai.Items.AddRange(new string[] { 
                 Constants.STATUS_DANG_HOC, 
                 Constants.STATUS_DA_KET_THUC, 
@@ -75,57 +83,98 @@ namespace QuanLyTrungTam
             });
             cbTrangThai.SelectedIndex = 0;
 
-            nmSiSo = new NumericUpDown { Minimum = 1, Maximum = 100, Value = 20 };
+            nmSiSo = new NumericUpDown { Minimum = 1, Maximum = 100, Value = 20, BorderStyle = BorderStyle.FixedSingle };
 
-            // Bố cục
-            int col1 = 30; int col2 = 450; int col3 = 850; int rowHeight = 50;
+            // Group 1: Thông Tin Chung
+            GroupBox gbGeneral = new GroupBox { 
+                Text = "Thông Tin Chung", 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                ForeColor = Color.DimGray,
+                Location = new Point(20, 15), 
+                Size = new Size(450, 290),
+                BackColor = Color.White 
+            };
+            
+            int g1y = 35; int gap = 50;
+            AddInput(gbGeneral, "Môn Học:", cbMonHoc, 20, g1y);
+            AddInput(gbGeneral, "Mã Lớp:", txbMaLop, 20, g1y + gap);
+            AddInput(gbGeneral, "Tên Lớp:", txbTenLop, 20, g1y + gap * 2);
+            AddInput(gbGeneral, "Trạng Thái:", cbTrangThai, 20, g1y + gap * 3);
+            AddInput(gbGeneral, "Sĩ Số:", nmSiSo, 20, g1y + gap * 4);
 
-            AddInput(pnlInput, "Môn Học:", cbMonHoc, col1, 20);
-            AddInput(pnlInput, "Mã Lớp (Auto):", txbMaLop, col1, 20 + rowHeight);
-            AddInput(pnlInput, "Tên Lớp:", txbTenLop, col1, 20 + rowHeight * 2);
-            AddInput(pnlInput, "Phòng Học:", cbPhongHoc, col1, 20 + rowHeight * 3);
+            // Group 2: Thời Gian & Địa Điểm
+            GroupBox gbTime = new GroupBox { 
+                Text = "Thời Gian & Địa Điểm", 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                ForeColor = Color.DimGray,
+                Location = new Point(480, 15), 
+                Size = new Size(530, 290),
+                BackColor = Color.White 
+            };
 
-            AddInput(pnlInput, "Lịch Học (Thứ):", cbThu, col2, 20);
-            AddInput(pnlInput, "Ca Học (Giờ):", cbCaHoc, col2, 20 + rowHeight);
-            AddInput(pnlInput, "Giáo Viên:", cbGiaoVien, col2, 20 + rowHeight * 2);
-            AddInput(pnlInput, "Trợ Giảng:", cbTroGiang, col2, 20 + rowHeight * 3);
+            int g2y = 35;
+            AddInput(gbTime, "Lịch Học (Thứ):", cbThu, 20, g2y);
+            AddInput(gbTime, "Ca Học (Giờ):", cbCaHoc, 20, g2y + gap);
+            AddInput(gbTime, "Phòng Học:", cbPhongHoc, 20, g2y + gap * 2);
+            AddInput(gbTime, "Giáo Viên:", cbGiaoVien, 20, g2y + gap * 3);
+            AddInput(gbTime, "Trợ Giảng:", cbTroGiang, 20, g2y + gap * 4);
 
-            AddInput(pnlInput, "Sĩ Số Tối Đa:", nmSiSo, col3, 20);
-            AddInput(pnlInput, "Trạng Thái:", cbTrangThai, col3, 20 + rowHeight);
+            pnlInput.Controls.Add(gbGeneral);
+            pnlInput.Controls.Add(gbTime);
 
-            AddInput(pnlInput, "Tìm nhanh:", txbSearch, col1, 260);
-            txbSearch.Width = 350;
-            btnSearch = new Button { Text = "🔍", Location = new Point(550, 257), Size = new Size(50, 30), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
-            btnSearch.Click += (s, e) => FilterData(txbSearch.Text);
-            txbSearch.TextChanged += (s, e) => FilterData(txbSearch.Text);
-            pnlInput.Controls.Add(btnSearch);
-
-            // Buttons
-            Button btnThem = CreateBtn("Mở Lớp Mới", Color.Teal, col3, 140);
-            Button btnSua = CreateBtn("Cập Nhật", Color.DodgerBlue, col3, 190);
-            Button btnXoa = CreateBtn("Xóa Lớp", Color.IndianRed, col3 + 140, 140);
-            Button btnLamMoi = CreateBtn("Làm Mới", Color.Gray, col3 + 140, 190);
+            // Button Action Panel - Move to right side
+            Panel pnlActions = new Panel { 
+                Location = new Point(1030, 25), 
+                Size = new Size(160, 280), // Aligned with group boxes
+                BackColor = Color.Transparent 
+            };
+            
+            Button btnThem = CreateBtn("Mở Lớp Mới", Color.FromArgb(40, 167, 69), 0, 0); // Green
+            Button btnSua = CreateBtn("Cập Nhật", Color.FromArgb(0, 123, 255), 0, 60); // Blue
+            Button btnXoa = CreateBtn("Xóa Lớp", Color.FromArgb(220, 53, 69), 0, 120); // Red
+            Button btnLamMoi = CreateBtn("Làm Mới", Color.FromArgb(108, 117, 125), 0, 180); // Gray
 
             btnThem.Click += BtnAdd_Click;
             btnSua.Click += BtnEdit_Click;
             btnXoa.Click += BtnDel_Click;
             btnLamMoi.Click += (s, e) => ResetForm();
 
-            pnlInput.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLamMoi });
+            pnlActions.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLamMoi });
+            pnlInput.Controls.Add(pnlActions);
+
+
+            // Search bar at bottom of input
+            Panel pnlSearch = new Panel { Location = new Point(20, 320), Size = new Size(1070, 40), BackColor = Color.White };
+            Label lblSearch = new Label { Text = "Tìm kiếm nhanh:", Location = new Point(10, 10), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Regular) };
+            txbSearch.Location = new Point(130, 8); txbSearch.Width = 400; txbSearch.Font = new Font("Segoe UI", 10);
+            
+            btnSearch = new Button { 
+                Text = "🔍", 
+                Location = new Point(540, 6), 
+                Size = new Size(40, 26), 
+                BackColor = Color.Orange, 
+                ForeColor = Color.White, 
+                FlatStyle = FlatStyle.Flat, 
+                Cursor = Cursors.Hand 
+            };
+            btnSearch.FlatAppearance.BorderSize = 0;
+
+            btnSearch.Click += (s, e) => FilterData(txbSearch.Text);
+            txbSearch.TextChanged += (s, e) => FilterData(txbSearch.Text);
+            
+            pnlSearch.Controls.Add(lblSearch); pnlSearch.Controls.Add(txbSearch); pnlSearch.Controls.Add(btnSearch);
+            pnlInput.Controls.Add(pnlSearch);
+
 
             // --- C. GRIDVIEW ---
-            Panel pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0), BackColor = Color.WhiteSmoke };
-            Panel pnlHeaderGrid = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.FromArgb(0, 150, 136) };
-            Label lblTitleGrid = new Label { Text = "DANH SÁCH LỚP HỌC", Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(15, 10) };
-            pnlHeaderGrid.Controls.Add(lblTitleGrid);
+            Panel pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20, 10, 20, 20) };
             dgvMain = new DataGridView();
             StyleGrid(dgvMain);
             dgvMain.CellClick += DgvMain_CellClick;
             dgvMain.CellFormatting += DgvMain_CellFormatting;
             dgvMain.DataError += (s, e) => { e.ThrowException = false; };
-
+            
             pnlGridContainer.Controls.Add(dgvMain);
-            pnlGridContainer.Controls.Add(pnlHeaderGrid);
             dgvMain.BringToFront();
 
             this.Controls.Add(pnlGridContainer);
@@ -195,8 +244,28 @@ namespace QuanLyTrungTam
             string[] hide = { "MaKyNang", "MaGiaoVien", "MaTroGiang", "MaPhong", "SoBuoi" };
             foreach (string c in hide) if (dgvMain.Columns.Contains(c)) dgvMain.Columns[c].Visible = false;
 
-            if (dgvMain.Columns.Contains("NgayBatDau")) dgvMain.Columns["NgayBatDau"].DefaultCellStyle.Format = Constants.DATE_FORMAT_DISPLAY;
-            if (dgvMain.Columns.Contains("NgayKetThuc")) dgvMain.Columns["NgayKetThuc"].DefaultCellStyle.Format = Constants.DATE_FORMAT_DISPLAY;
+            // Header mapping and alignment
+            if (dgvMain.Columns.Contains("MaLop")) { dgvMain.Columns["MaLop"].HeaderText = "Mã Lớp"; dgvMain.Columns["MaLop"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft; }
+            if (dgvMain.Columns.Contains("TenLop")) { dgvMain.Columns["TenLop"].HeaderText = "Tên Lớp"; }
+            if (dgvMain.Columns.Contains("TenKyNang")) { dgvMain.Columns["TenKyNang"].HeaderText = "Môn Học"; }
+            if (dgvMain.Columns.Contains("Thu")) { dgvMain.Columns["Thu"].HeaderText = "Lịch Học"; dgvMain.Columns["Thu"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter; }
+            if (dgvMain.Columns.Contains("CaHoc")) { dgvMain.Columns["CaHoc"].HeaderText = "Ca Học"; dgvMain.Columns["CaHoc"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter; }
+            if (dgvMain.Columns.Contains("SiSoToiDa")) { dgvMain.Columns["SiSoToiDa"].HeaderText = "Sĩ Số"; dgvMain.Columns["SiSoToiDa"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight; }
+            if (dgvMain.Columns.Contains("TrangThai")) { dgvMain.Columns["TrangThai"].HeaderText = "Trạng Thái"; dgvMain.Columns["TrangThai"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter; }
+            if (dgvMain.Columns.Contains("TenPhong")) { dgvMain.Columns["TenPhong"].HeaderText = "Phòng Học"; }
+            if (dgvMain.Columns.Contains("TenGV")) { dgvMain.Columns["TenGV"].HeaderText = "Giáo Viên"; }
+            if (dgvMain.Columns.Contains("TenTG")) { dgvMain.Columns["TenTG"].HeaderText = "Trợ Giảng"; }
+
+            if (dgvMain.Columns.Contains("NgayBatDau")) { 
+                dgvMain.Columns["NgayBatDau"].HeaderText = "Ngày Bắt Đầu"; 
+                dgvMain.Columns["NgayBatDau"].DefaultCellStyle.Format = Constants.DATE_FORMAT_DISPLAY;
+                dgvMain.Columns["NgayBatDau"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+            if (dgvMain.Columns.Contains("NgayKetThuc")) { 
+                dgvMain.Columns["NgayKetThuc"].HeaderText = "Ngày Kết Thúc"; 
+                dgvMain.Columns["NgayKetThuc"].DefaultCellStyle.Format = Constants.DATE_FORMAT_DISPLAY;
+                dgvMain.Columns["NgayKetThuc"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
         }
 
         // --- SỰ KIỆN CHỌN MÔN HỌC ---
@@ -236,7 +305,7 @@ namespace QuanLyTrungTam
 
                 if (cbGiaoVien.Items.Count > 0) cbGiaoVien.SelectedIndex = 0;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Silent catch or simple log
             }
@@ -364,28 +433,55 @@ namespace QuanLyTrungTam
             }
         }
 
-        private void AddInput(Panel p, string lb, Control c, int x, int y)
+        private void AddInput(Control parent, string lb, Control c, int x, int y)
         {
-            Label l = new Label { Text = lb, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
-            c.Location = new Point(x + 130, y - 3); c.Width = 220; c.Font = new Font("Segoe UI", 10);
-            p.Controls.Add(l); p.Controls.Add(c);
+            Label l = new Label { 
+                Text = lb, 
+                Location = new Point(x, y + 3), 
+                AutoSize = true, 
+                Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                ForeColor = Color.Black
+            };
+            c.Location = new Point(x + 110, y); 
+            c.Width = 300; // Wider inputs
+            c.Font = new Font("Segoe UI", 10);
+            parent.Controls.Add(l); parent.Controls.Add(c);
         }
 
         private Button CreateBtn(string t, Color c, int x, int y) 
         { 
-            return new Button { Text = t, Location = new Point(x, y), Size = new Size(130, 38), BackColor = c, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9, FontStyle.Bold), Cursor = Cursors.Hand }; 
+            Button btn = new Button { 
+                Text = t, 
+                Location = new Point(x, y), 
+                Size = new Size(160, 45), // Bigger buttons
+                BackColor = c, 
+                ForeColor = Color.White, 
+                FlatStyle = FlatStyle.Flat, 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                Cursor = Cursors.Hand 
+            }; 
+            btn.FlatAppearance.BorderSize = 0;
+            return btn;
         }
 
         private void StyleGrid(DataGridView dgv)
         {
-            dgv.Dock = DockStyle.Fill; dgv.BackgroundColor = Color.White;
+            dgv.Dock = DockStyle.Fill; 
+            dgv.BackgroundColor = Color.White;
             dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect; dgv.ReadOnly = true;
-            dgv.RowHeadersVisible = false; dgv.ColumnHeadersHeight = 35;
+            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect; 
+            dgv.ReadOnly = true;
+            dgv.RowHeadersVisible = false; 
+            dgv.ColumnHeadersHeight = 45; // Taller header
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243); // Modern Blue Header
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 11, FontStyle.Bold); // Bold Header
+            dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10); // Readable content
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254); // Soft selection
+            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgv.BorderStyle = BorderStyle.None;
+            dgv.GridColor = Color.WhiteSmoke;
         }
 
         private void SetPlaceholder(TextBox txt, string holder)

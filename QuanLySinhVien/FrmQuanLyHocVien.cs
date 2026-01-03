@@ -39,91 +39,145 @@ namespace QuanLyTrungTam
         // =========================================================================
         private void SetupCustomUI()
         {
-            this.Controls.Add(ui_dgvHocVien);
-            this.Controls.Add(ui_pnlTop);
+            this.Controls.Clear();
+            this.BackColor = Color.FromArgb(240, 242, 245);
+            this.Size = new Size(1280, 800);
+            this.Padding = new Padding(10);
 
-            // Cấu hình GridView
-            ui_dgvHocVien.Dock = DockStyle.Fill;
-            ui_dgvHocVien.BackgroundColor = Color.WhiteSmoke;
-            ui_dgvHocVien.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            ui_dgvHocVien.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            ui_dgvHocVien.ReadOnly = true;
-            ui_dgvHocVien.AllowUserToAddRows = false;
+            // --- HEADER ---
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White, Padding = new Padding(20, 0, 20, 0) };
+            Label lblTitle = new Label { 
+                Text = "QUẢN LÝ HỌC VIÊN", 
+                Font = new Font("Segoe UI", 18, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(33, 150, 243), 
+                AutoSize = true, 
+                TextAlign = ContentAlignment.MiddleLeft 
+            };
+            lblTitle.Location = new Point(20, (pnlHeader.Height - lblTitle.Height) / 2);
+            pnlHeader.Controls.Add(lblTitle);
 
-            // 1. Khởi tạo control nhập liệu
-            ui_txbMa = new TextBox { ReadOnly = true, BackColor = Color.LightYellow };
-            ui_txbTen = new TextBox();
-            ui_txbSDT = new TextBox();
-            ui_txbEmail = new TextBox();
-            ui_txbDiaChi = new TextBox();
-            ui_dtpNgaySinh = new DateTimePicker { Format = DateTimePickerFormat.Short };
-
-            ui_cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            // Danh sách trạng thái chuẩn
+            // --- INPUT PANEL ---
+            ui_pnlTop = new Panel { Dock = DockStyle.Top, Height = 370, BackColor = Color.Transparent, Padding = new Padding(0, 15, 0, 15) };
+            
+            // Init Controls
+            ui_txbMa = new TextBox { ReadOnly = true, BackColor = Color.WhiteSmoke, BorderStyle = BorderStyle.FixedSingle };
+            ui_txbTen = new TextBox { BorderStyle = BorderStyle.FixedSingle };
+            ui_txbSDT = new TextBox { BorderStyle = BorderStyle.FixedSingle };
+            ui_txbEmail = new TextBox { BorderStyle = BorderStyle.FixedSingle };
+            ui_txbDiaChi = new TextBox { BorderStyle = BorderStyle.FixedSingle };
+            ui_dtpNgaySinh = new DateTimePicker { Format = DateTimePickerFormat.Short, Font = new Font("Segoe UI", 10) };
+            ui_cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Standard };
             ui_cbTrangThai.Items.AddRange(new string[] { "Nhập học", "Đang học", "Bảo lưu", "Bỏ học", "Hoàn thành" });
             ui_cbTrangThai.SelectedIndex = 0;
 
-            // 2. Vẽ Control Input lên Panel (Dùng hàm helper AddInput bên dưới)
-            AddInput(ui_pnlTop, "Mã HV (Auto):", ui_txbMa, 20, 20);
-            AddInput(ui_pnlTop, "Họ và Tên:", ui_txbTen, 20, 60);
-            AddInput(ui_pnlTop, "Ngày Sinh:", ui_dtpNgaySinh, 20, 100);
+            // Group 1: Thông Tin Cá Nhân
+            GroupBox gbInfo = new GroupBox { 
+                Text = "Thông Tin Cá Nhân", 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                ForeColor = Color.DimGray,
+                Location = new Point(20, 10), 
+                Size = new Size(450, 240),
+                BackColor = Color.White 
+            };
+            int gy = 35; int gap = 45;
+            AddInput(gbInfo, "Mã HV:", ui_txbMa, 20, gy);
+            AddInput(gbInfo, "Họ Tên:", ui_txbTen, 20, gy + gap);
+            AddInput(gbInfo, "Ngày Sinh:", ui_dtpNgaySinh, 20, gy + gap * 2);
+            AddInput(gbInfo, "Trạng Thái:", ui_cbTrangThai, 20, gy + gap * 3);
 
-            AddInput(ui_pnlTop, "Số Điện Thoại:", ui_txbSDT, 400, 20);
-            AddInput(ui_pnlTop, "Email:", ui_txbEmail, 400, 60);
-            AddInput(ui_pnlTop, "Địa Chỉ:", ui_txbDiaChi, 400, 100);
-            AddInput(ui_pnlTop, "Trạng Thái:", ui_cbTrangThai, 780, 20);
+            // Group 2: Thông Tin Liên Hệ
+            GroupBox gbContact = new GroupBox { 
+                Text = "Thông Tin Liên Hệ", 
+                Font = new Font("Segoe UI", 10, FontStyle.Bold), 
+                ForeColor = Color.DimGray,
+                Location = new Point(490, 10), 
+                Size = new Size(450, 240),
+                BackColor = Color.White 
+            };
+            AddInput(gbContact, "Số ĐT:", ui_txbSDT, 20, gy);
+            AddInput(gbContact, "Email:", ui_txbEmail, 20, gy + gap);
+            AddInput(gbContact, "Địa Chỉ:", ui_txbDiaChi, 20, gy + gap * 2);
 
-            // 3. Dàn Nút Chức Năng (Đã thêm nút XÓA và căn chỉnh lại tọa độ X)
-            // Khoảng cách giữa các nút là 140px
-            Button btnLamMoi = CreateBtn("🔄 Làm Mới", Color.Gray, 20, 160);
-            Button btnLuu = CreateBtn("💾 Lưu Mới", Color.Teal, 160, 160);
-            Button btnCapNhat = CreateBtn("✏️ Cập Nhật", Color.DodgerBlue, 300, 160);
+            ui_pnlTop.Controls.Add(gbInfo);
+            ui_pnlTop.Controls.Add(gbContact);
 
-            // --- NÚT XÓA MỚI ---
-            Button btnXoa = CreateBtn("❌ Xóa HV", Color.Crimson, 440, 160);
+            // Button Panel (Right Side)
+            Panel pnlActions = new Panel { Location = new Point(960, 20), Size = new Size(180, 340) };
+            
+            // Functions
+            Button btnLamMoi = CreateBtn("🔄 Làm Mới", Color.FromArgb(108, 117, 125), 0, 0);
+            Button btnLuu = CreateBtn("💾 Lưu Mới", Color.FromArgb(40, 167, 69), 0, 45);
+            Button btnCapNhat = CreateBtn("✏️ Cập Nhật", Color.FromArgb(0, 123, 255), 0, 90);
+            Button btnXoa = CreateBtn("❌ Xóa HV", Color.FromArgb(220, 53, 69), 0, 135);
+            
+            // Navigation
+            Button btnDangKyLop = CreateBtn("📚 Đăng Ký Lớp", Color.Orange, 0, 195);
+            Button btnThuPhi = CreateBtn("💰 Thu Học Phí", Color.MediumSeaGreen, 0, 240);
+            Button btnCapTK = CreateBtn("🔐 Cấp Tài Khoản", Color.Purple, 0, 285);
 
-            Button btnDangKyLop = CreateBtn("📚 Đăng Ký Lớp", Color.Orange, 580, 160);
-            Button btnThuPhi = CreateBtn("💰 Thu Học Phí", Color.MediumSeaGreen, 720, 160);
-            Button btnCapTK = CreateBtn("🔐 Cấp Tài Khoản", Color.Purple, 860, 160);
+            pnlActions.Controls.AddRange(new Control[] { btnLamMoi, btnLuu, btnCapNhat, btnXoa, btnDangKyLop, btnThuPhi, btnCapTK });
+            ui_pnlTop.Controls.Add(pnlActions);
 
-            // 4. Thanh Tìm Kiếm
-            Label lblSearch = new Label { Text = "Tìm kiếm:", Location = new Point(20, 212), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
-            ui_txbSearch = new TextBox { Location = new Point(100, 210), Width = 350, Font = new Font("Segoe UI", 10) };
+             // Search Bar
+            Panel pnlSearch = new Panel { Location = new Point(20, 270), Size = new Size(920, 50), BackColor = Color.White };
+            Label lblSearch = new Label { Text = "Tìm kiếm:", Location = new Point(15, 15), AutoSize = true, Font = new Font("Segoe UI", 10) };
+            ui_txbSearch = new TextBox { Location = new Point(100, 12), Width = 400, Font = new Font("Segoe UI", 10), BorderStyle = BorderStyle.FixedSingle };
             SetPlaceholder(ui_txbSearch, "Nhập mã số hoặc tên học viên...");
+            
+            ui_btnSearch = new Button { Text = "🔍", Location = new Point(510, 10), Size = new Size(50, 28), BackColor = Color.Navy, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            ui_btnSearch.FlatAppearance.BorderSize = 0;
 
-            ui_btnSearch = new Button { Text = "🔍", Location = new Point(460, 209), Size = new Size(50, 29), BackColor = Color.Navy, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-
-            // Gắn sự kiện tìm kiếm
             ui_txbSearch.TextChanged += (s, e) => FilterData(ui_txbSearch.Text);
             ui_btnSearch.Click += (s, e) => FilterData(ui_txbSearch.Text);
 
-            ui_pnlTop.Controls.AddRange(new Control[] { lblSearch, ui_txbSearch, ui_btnSearch });
+            pnlSearch.Controls.AddRange(new Control[] { lblSearch, ui_txbSearch, ui_btnSearch });
+            ui_pnlTop.Controls.Add(pnlSearch);
 
-            // 5. Gắn sự kiện cho các nút chức năng
+
+            // Events
             btnLamMoi.Click += (s, e) => ResetForm();
             btnLuu.Click += BtnThem_Click;
             btnCapNhat.Click += BtnSua_Click;
-            btnXoa.Click += BtnXoa_Click; // Sự kiện xóa mới
+            btnXoa.Click += BtnXoa_Click;
             btnCapTK.Click += BtnCapTK_Click;
 
-            // --- NÚT CHUYỂN TRANG ---
             btnDangKyLop.Click += (s, e) => {
                 if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
                 if (ui_cbTrangThai.Text == "Bỏ học") { MessageBox.Show("Học viên này đã bỏ học, không thể đăng ký lớp!"); return; }
-
                 fMain main = Application.OpenForms.OfType<fMain>().FirstOrDefault();
                 if (main != null) main.NavigateToDangKy(currentMaHV);
             };
 
             btnThuPhi.Click += (s, e) => {
                 if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
-
                 fMain main = Application.OpenForms.OfType<fMain>().FirstOrDefault();
                 if (main != null) main.NavigateToThuHocPhi(currentMaHV);
             };
 
-            // Thêm tất cả nút vào Panel
-            ui_pnlTop.Controls.AddRange(new Control[] { btnLamMoi, btnLuu, btnCapNhat, btnXoa, btnDangKyLop, btnThuPhi, btnCapTK });
+            // Setup Grid
+            Panel pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20, 0, 20, 20) };
+            ui_dgvHocVien.Dock = DockStyle.Fill;
+            ui_dgvHocVien.BackgroundColor = Color.White;
+            ui_dgvHocVien.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            ui_dgvHocVien.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            ui_dgvHocVien.ReadOnly = true;
+            ui_dgvHocVien.AllowUserToAddRows = false;
+            ui_dgvHocVien.BorderStyle = BorderStyle.None;
+            ui_dgvHocVien.RowHeadersVisible = false;
+            ui_dgvHocVien.ColumnHeadersHeight = 45;
+            ui_dgvHocVien.EnableHeadersVisualStyles = false;
+            ui_dgvHocVien.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
+            ui_dgvHocVien.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            ui_dgvHocVien.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+            ui_dgvHocVien.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            ui_dgvHocVien.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            ui_dgvHocVien.DefaultCellStyle.SelectionForeColor = Color.Black;
+
+            pnlGridContainer.Controls.Add(ui_dgvHocVien);
+            
+            this.Controls.Add(pnlGridContainer);
+            this.Controls.Add(ui_pnlTop);
+            this.Controls.Add(pnlHeader);
         }
 
         // =========================================================================
@@ -131,9 +185,31 @@ namespace QuanLyTrungTam
         // =========================================================================
 
         // Tải danh sách học viên lên Grid
+        // Tải danh sách học viên lên Grid
         void LoadData()
         {
             ui_dgvHocVien.DataSource = HocVienBUS.Instance.GetListHocVien();
+
+            // Header mapping
+            if (ui_dgvHocVien.Columns.Contains("MaHV")) { ui_dgvHocVien.Columns["MaHV"].HeaderText = "Mã Học Viên"; }
+            if (ui_dgvHocVien.Columns.Contains("HoTen")) { ui_dgvHocVien.Columns["HoTen"].HeaderText = "Họ và Tên"; }
+            if (ui_dgvHocVien.Columns.Contains("NgaySinh")) { 
+                ui_dgvHocVien.Columns["NgaySinh"].HeaderText = "Ngày Sinh"; 
+                ui_dgvHocVien.Columns["NgaySinh"].DefaultCellStyle.Format = "dd/MM/yyyy";
+                ui_dgvHocVien.Columns["NgaySinh"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+            if (ui_dgvHocVien.Columns.Contains("SDT")) { ui_dgvHocVien.Columns["SDT"].HeaderText = "Số Điện Thoại"; }
+            if (ui_dgvHocVien.Columns.Contains("Email")) { ui_dgvHocVien.Columns["Email"].HeaderText = "Email"; }
+            if (ui_dgvHocVien.Columns.Contains("DiaChi")) { ui_dgvHocVien.Columns["DiaChi"].HeaderText = "Địa Chỉ"; }
+            if (ui_dgvHocVien.Columns.Contains("TrangThai")) { 
+                ui_dgvHocVien.Columns["TrangThai"].HeaderText = "Trạng Thái"; 
+                ui_dgvHocVien.Columns["TrangThai"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+            if (ui_dgvHocVien.Columns.Contains("NgayGiaNhap")) { 
+                ui_dgvHocVien.Columns["NgayGiaNhap"].HeaderText = "Ngày Đăng Ký"; 
+                ui_dgvHocVien.Columns["NgayGiaNhap"].DefaultCellStyle.Format = "dd/MM/yyyy";
+            }
+            if (ui_dgvHocVien.Columns.Contains("GioiTinh")) { ui_dgvHocVien.Columns["GioiTinh"].HeaderText = "Giới Tính"; }
 
             // Đăng ký lại sự kiện CellClick để tránh bị double event
             ui_dgvHocVien.CellClick -= DgvHocVien_CellClick;
@@ -283,14 +359,21 @@ namespace QuanLyTrungTam
         // =========================================================================
 
         // Hàm hỗ trợ vẽ Label + Control nhập liệu nhanh
-        void AddInput(Panel p, string lb, Control c, int x, int y)
+        // Hàm hỗ trợ vẽ Label + Control nhập liệu nhanh
+        void AddInput(Control parent, string lb, Control c, int x, int y)
         {
-            Label l = new Label { Text = lb, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", 9) };
-            c.Location = new Point(x + 110, y - 3);
-            c.Width = 220;
+            Label l = new Label { 
+                Text = lb, 
+                Location = new Point(x, y + 3), 
+                AutoSize = true, 
+                Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                ForeColor = Color.Black
+            };
+            c.Location = new Point(x + 100, y);
+            c.Width = 300; // Wider
             c.Font = new Font("Segoe UI", 10);
-            p.Controls.Add(l);
-            p.Controls.Add(c);
+            parent.Controls.Add(l);
+            parent.Controls.Add(c);
         }
 
         // Hàm tạo nút bấm có style đồng bộ
@@ -300,7 +383,7 @@ namespace QuanLyTrungTam
             {
                 Text = t,
                 Location = new Point(x, y),
-                Size = new Size(130, 35),
+                Size = new Size(160, 40), // Taller
                 BackColor = c,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,

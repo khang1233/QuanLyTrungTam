@@ -32,7 +32,7 @@ namespace QuanLyTrungTam
             this.Size = new Size(1100, 700);
 
             // --- A. HEADER ---
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 150, 136) };
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(33, 150, 243) };
             Label lblTitle = new Label { Text = "TRA CỨU THỜI KHÓA BIỂU", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 15) };
             pnlHeader.Controls.Add(lblTitle);
 
@@ -51,7 +51,7 @@ namespace QuanLyTrungTam
             cbFilterValue = new ComboBox { Location = new Point(470, 15), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
             cbFilterValue.Enabled = false;
 
-            btnSearch = new Button { Text = "TẢI DỮ LIỆU", Location = new Point(750, 12), Size = new Size(120, 35), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
+            btnSearch = new Button { Text = "TẢI DỮ LIỆU", Location = new Point(750, 12), Size = new Size(120, 35), BackColor = Color.FromArgb(33, 150, 243), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
             btnSearch.Click += BtnSearch_Click;
 
             // Dòng 2: Tìm kiếm nhanh (MỚI - Y = 60)
@@ -243,6 +243,18 @@ namespace QuanLyTrungTam
             SetHeader("Thu", "Lịch Học");
             SetHeader("CaHoc", "Ca Học");
             SetHeader("TrangThai", "Trạng Thái");
+            SetHeader("NgayKetThuc", "Ngày Kết Thúc");
+            SetHeader("SoBuoi", "Số Buổi");
+
+            if (dgvSchedule.Columns.Contains("NgayKetThuc")) 
+            {
+                dgvSchedule.Columns["NgayKetThuc"].DefaultCellStyle.Format = "dd/MM/yyyy";
+                dgvSchedule.Columns["NgayKetThuc"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+            if (dgvSchedule.Columns.Contains("SoBuoi")) 
+            {
+                dgvSchedule.Columns["SoBuoi"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
         }
 
         private void SetHeader(string colName, string text)
@@ -260,11 +272,13 @@ namespace QuanLyTrungTam
             dgv.RowHeadersVisible = false;
             dgv.ColumnHeadersHeight = 40;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10);
             dgv.DefaultCellStyle.ForeColor = Color.Black;
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
             dgv.RowTemplate.Height = 35;
         }
     }

@@ -29,63 +29,72 @@ namespace QuanLyTrungTam
         {
             this.Controls.Clear();
             this.Text = "Quản Lý Điểm Số & Xếp Loại";
-            this.Size = new Size(1280, 750);
-            this.BackColor = Color.White;
+            this.Size = new Size(1280, 800);
+            this.BackColor = Color.FromArgb(240, 242, 245);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.Font = new Font("Segoe UI", 10F);
+            this.Padding = new Padding(10);
 
             // --- A. PANEL HEADER (Top) ---
-            Panel pnlTop = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 80, // Giảm chiều cao chút cho gọn
-                BackColor = Color.WhiteSmoke, // Màu xám nhạt để tách biệt header
-                Padding = new Padding(20)
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.White, Padding = new Padding(20, 0, 20, 0) };
+            Label lblTitle = new Label { 
+                Text = "QUẢN LÝ ĐIỂM SỐ", 
+                Font = new Font("Segoe UI", 18, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(33, 150, 243), 
+                AutoSize = true, 
+                TextAlign = ContentAlignment.MiddleLeft 
             };
-            // Đường kẻ dưới header
-            pnlTop.Paint += (s, e) => e.Graphics.DrawLine(Pens.Silver, 0, 79, pnlTop.Width, 79);
+            lblTitle.Location = new Point(20, (pnlHeader.Height - lblTitle.Height) / 2);
+            pnlHeader.Controls.Add(lblTitle);
 
-            Label lblLop = new Label { Text = "Chọn lớp:", Location = new Point(20, 28), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            cbLop = new ComboBox { Location = new Point(100, 25), Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+            // --- FILTER PANEL ---
+            Panel pnlFilter = new Panel { Dock = DockStyle.Top, Height = 80, BackColor = Color.Transparent };
+            
+            // Class Select
+            Label lblLop = new Label { Text = "Chọn Lớp:", Location = new Point(20, 30), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray };
+            cbLop = new ComboBox { Location = new Point(110, 27), Width = 300, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Color.White, Font = new Font("Segoe UI", 11) };
             cbLop.SelectedIndexChanged += (s, e) => LoadDiem();
 
-            Label lblSearch = new Label { Text = "Tìm kiếm:", Location = new Point(430, 28), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            txbSearch = new TextBox { Location = new Point(510, 25), Width = 250 };
+            // Search
+            Label lblSearch = new Label { Text = "Tìm kiếm:", Location = new Point(450, 30), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DimGray };
+            txbSearch = new TextBox { Location = new Point(530, 27), Width = 300, Font = new Font("Segoe UI", 11), BorderStyle = BorderStyle.FixedSingle };
             SetPlaceholder(txbSearch, "Mã hoặc tên học viên...");
 
+            // Save Button
             btnSave = new Button
             {
-                Text = "LƯU BẢNG ĐIỂM",
-                Location = new Point(pnlTop.Width - 200, 20), // Neo phải
-                Size = new Size(160, 40),
-                BackColor = Color.FromArgb(0, 150, 136),
+                Text = "💾 LƯU BẢNG ĐIỂM",
+                Location = new Point(pnlFilter.Width - 220, 20),
+                Size = new Size(200, 45),
+                BackColor = Color.FromArgb(40, 167, 69), // Green
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Cursor = Cursors.Hand,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
+            btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += BtnSave_Click;
 
-            pnlTop.Controls.AddRange(new Control[] { lblLop, cbLop, lblSearch, txbSearch, btnSave });
+            pnlFilter.Controls.AddRange(new Control[] { lblLop, cbLop, lblSearch, txbSearch, btnSave });
 
-            // --- B. DATAGRIDVIEW CONTAINER (Để tạo khoảng hở đẹp mắt) ---
+
+            // --- B. DATAGRIDVIEW CONTAINER ---
             Panel pnlGridContainer = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(15), // Tạo viền trắng xung quanh bảng
-                BackColor = Color.White
+                Padding = new Padding(0, 10, 0, 10),
+                BackColor = Color.Transparent
             };
 
             dgvDiem = new DataGridView();
-            InitGridStyle(); // Gọi hàm tạo cột và style ngay lập tức
-
+            InitGridStyle(); 
             pnlGridContainer.Controls.Add(dgvDiem);
 
-            // --- QUAN TRỌNG: THỨ TỰ ADD CONTROL ---
-            // Add Grid (Fill) trước, hoặc Add Container chứa Grid
+            // Order of adding affects Docking
             this.Controls.Add(pnlGridContainer);
-            // Add Header (Top) sau cùng để nó đè lên phần trên
-            this.Controls.Add(pnlTop);
+            this.Controls.Add(pnlFilter);
+            this.Controls.Add(pnlHeader);
         }
 
         // =============================================
@@ -94,8 +103,8 @@ namespace QuanLyTrungTam
         private void InitGridStyle()
         {
             dgvDiem.Dock = DockStyle.Fill;
-            dgvDiem.BackgroundColor = Color.WhiteSmoke; // Đổi màu nền bảng để thấy rõ vùng bảng
-            dgvDiem.BorderStyle = BorderStyle.Fixed3D;  // Thêm viền để thấy khung
+            dgvDiem.BackgroundColor = Color.White;
+            dgvDiem.BorderStyle = BorderStyle.None;
 
             dgvDiem.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvDiem.AllowUserToAddRows = false;
@@ -104,10 +113,10 @@ namespace QuanLyTrungTam
             dgvDiem.RowTemplate.Height = 40;
             dgvDiem.EnableHeadersVisualStyles = false;
             dgvDiem.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvDiem.AutoGenerateColumns = false; // Tắt tự động sinh cột để dùng cột mình tự định nghĩa
+            dgvDiem.AutoGenerateColumns = false;
 
             // Style Header
-            dgvDiem.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgvDiem.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243); // Modern Blue
             dgvDiem.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgvDiem.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgvDiem.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -115,6 +124,9 @@ namespace QuanLyTrungTam
             // Style Cell
             dgvDiem.DefaultCellStyle.Font = new Font("Segoe UI", 10);
             dgvDiem.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgvDiem.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgvDiem.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgvDiem.GridColor = Color.WhiteSmoke;
 
             // --- ĐỊNH NGHĨA CỘT THỦ CÔNG (Đảm bảo bảng luôn hiện Header) ---
             AddCol("MaHV", "Mã HV", true, 100);

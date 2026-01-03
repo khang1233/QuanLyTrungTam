@@ -46,7 +46,7 @@ namespace QuanLyTrungTam
                 Text = "Đổi mật khẩu",
                 Dock = DockStyle.Top,
                 Height = 30,
-                BackColor = Color.Teal,
+                BackColor = Color.FromArgb(33, 150, 243), // Blue
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
@@ -83,7 +83,7 @@ namespace QuanLyTrungTam
             {
                 Text = "Xin chào, ...",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                ForeColor = Color.Teal,
+                ForeColor = Color.FromArgb(33, 150, 243),
                 Location = new Point(10, 10),
                 AutoSize = true
             };
@@ -130,7 +130,7 @@ namespace QuanLyTrungTam
             dgv.AllowUserToAddRows = false;
             dgv.ColumnHeadersHeight = 40;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.Teal;
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;

@@ -12,13 +12,13 @@ namespace QuanLyTrungTam
         // --- CẤU HÌNH MÀU SẮC (GIỮ NGUYÊN) ---
         private struct Colors
         {
-            public static Color Primary = ColorTranslator.FromHtml("#009688");
+            public static Color Primary = Color.FromArgb(33, 150, 243); // Blue #2196F3
             public static Color Secondary = ColorTranslator.FromHtml("#607D8B");
-            public static Color Success = ColorTranslator.FromHtml("#4CAF50");
+            public static Color Success = Color.FromArgb(40, 167, 69); // Green
             public static Color Warning = ColorTranslator.FromHtml("#FF9800");
             public static Color Danger = ColorTranslator.FromHtml("#F44336");
-            public static Color Info = ColorTranslator.FromHtml("#2196F3");
-            public static Color Bg = ColorTranslator.FromHtml("#F2F4F8");
+            public static Color Info = ColorTranslator.FromHtml("#00BCD4"); // Teal (Swapped) or Cyan
+            public static Color Bg = Color.FromArgb(240, 242, 245); // Standard Light Gray
         }
 
         public FrmDashboard()
@@ -230,11 +230,26 @@ namespace QuanLyTrungTam
         }
         private void StyleGrid(DataGridView dgv)
         {
-            dgv.Dock = DockStyle.Fill; dgv.BackgroundColor = Color.White; dgv.BorderStyle = BorderStyle.None;
+            dgv.Dock = DockStyle.Fill; 
+            dgv.BackgroundColor = Color.White; 
+            dgv.BorderStyle = BorderStyle.None;
             dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Colors.Secondary; dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgv.EnableHeadersVisualStyles = false; dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.RowHeadersVisible = false; dgv.ReadOnly = true;
+            
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Colors.Primary; 
+            dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgv.ColumnHeadersHeight = 40;
+
+            dgv.EnableHeadersVisualStyles = false; 
+            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv.RowHeadersVisible = false; 
+            dgv.ReadOnly = true;
+            
+            dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgv.RowTemplate.Height = 35;
+            dgv.GridColor = Color.WhiteSmoke;
         }
         private void UpdateLabel(string name, string val) { var controls = this.Controls.Find(name, true); if (controls.Length > 0) controls[0].Text = val; }
     }

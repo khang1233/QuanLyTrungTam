@@ -51,14 +51,14 @@ namespace QuanLyTrungTam
             {
                 Dock = DockStyle.Top,
                 Height = 60,
-                BackColor = Color.FromArgb(0, 121, 107),
+                BackColor = Color.White,
                 Padding = new Padding(20, 15, 0, 0)
             };
             Label lblTitle = new Label
             {
                 Text = "QUẢN LÝ ĐĂNG KÝ & HỦY MÔN",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                ForeColor = Color.White,
+                ForeColor = Color.FromArgb(33, 150, 243),
                 AutoSize = true
             };
             pnlHeader.Controls.Add(lblTitle);
@@ -133,19 +133,19 @@ namespace QuanLyTrungTam
                 Dock = DockStyle.Top,
                 Height = 220,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 121, 107),
+                ForeColor = Color.FromArgb(33, 150, 243),
                 BackColor = Color.White
             };
 
             Label lblMon = new Label { Text = "Môn Học:", Location = new Point(20, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
-            Label lblLop = new Label { Text = "Lớp Học:", Location = new Point(300, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
-            Label lblTien = new Label { Text = "Học Phí:", Location = new Point(580, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblLop = new Label { Text = "Lớp Học:", Location = new Point(260, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblTien = new Label { Text = "Học Phí:", Location = new Point(500, 40), AutoSize = true, Font = new Font("Segoe UI", 9) };
 
-            cbKyNang = new ComboBox { Location = new Point(20, 65), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 11), ItemHeight = 30 };
-            cbLopHoc = new ComboBox { Location = new Point(300, 65), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 11) };
-            lblHocPhi = new Label { Text = "0 VNĐ", Location = new Point(580, 65), AutoSize = true, Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.Red };
+            cbKyNang = new ComboBox { Location = new Point(20, 65), Width = 220, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 11), ItemHeight = 30 };
+            cbLopHoc = new ComboBox { Location = new Point(260, 65), Width = 220, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 11) };
+            lblHocPhi = new Label { Text = "0 VNĐ", Location = new Point(500, 65), AutoSize = true, Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.Red };
 
-            btnDangKy = new Button { Text = "XÁC NHẬN ĐĂNG KÝ", Location = new Point(580, 120), Size = new Size(220, 45), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11, FontStyle.Bold), Cursor = Cursors.Hand };
+            btnDangKy = new Button { Text = "XÁC NHẬN ĐĂNG KÝ", Location = new Point(500, 120), Size = new Size(220, 45), BackColor = Color.FromArgb(40, 167, 69), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11, FontStyle.Bold), Cursor = Cursors.Hand };
             btnDangKy.FlatAppearance.BorderSize = 0;
 
             grpReg.Controls.AddRange(new Control[] { lblMon, lblLop, lblTien, cbKyNang, cbLopHoc, lblHocPhi, btnDangKy });
@@ -211,6 +211,14 @@ namespace QuanLyTrungTam
                 dt = dt.DefaultView.ToTable();
             }
             dgvHocVien.DataSource = dt;
+            
+            // Header Mapping
+            if (dgvHocVien.Columns.Contains("MaHV")) dgvHocVien.Columns["MaHV"].HeaderText = "Mã HV";
+            if (dgvHocVien.Columns.Contains("HoTen")) dgvHocVien.Columns["HoTen"].HeaderText = "Họ Tên";
+            if (dgvHocVien.Columns.Contains("SDT")) dgvHocVien.Columns["SDT"].HeaderText = "Số ĐT";
+            if (dgvHocVien.Columns.Contains("GioiTinh")) dgvHocVien.Columns["GioiTinh"].HeaderText = "Giới Tính";
+            if (dgvHocVien.Columns.Contains("TrangThai")) dgvHocVien.Columns["TrangThai"].HeaderText = "Trạng Thái";
+
             string[] hide = { "NgaySinh", "Email", "DiaChi", "NgayGiaNhap", "MaLop", "MaKyNang" };
             foreach (string c in hide) if (dgvHocVien.Columns.Contains(c)) dgvHocVien.Columns[c].Visible = false;
         }
@@ -335,9 +343,11 @@ namespace QuanLyTrungTam
             dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill; dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgv.ReadOnly = true; dgv.AllowUserToAddRows = false; dgv.RowHeadersVisible = false;
             dgv.ColumnHeadersHeight = 40; dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
         }
 
         private void SetPlaceholder(TextBox txt, string holder)

@@ -2,6 +2,7 @@
 using QuanLyTrungTam.DTO;
 using QuanLyTrungTam.Utilities;
 using System;
+using System.Drawing; // Added missing namespace
 using System.Windows.Forms;
 
 namespace QuanLyTrungTam
@@ -15,8 +16,72 @@ namespace QuanLyTrungTam
         {
             InitializeComponent();
             this.loginAccount = acc;
+            SetupUI();
+        }
+
+        private void SetupUI()
+        {
             this.Text = "Đổi Mật Khẩu Cá Nhân";
-            this.StartPosition = FormStartPosition.CenterParent; // Hiện giữa form cha
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.BackColor = Color.White;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+
+            // Define Blue Color
+            Color blueColor = Color.FromArgb(33, 150, 243);
+
+            // Style Labels
+            // Increase height
+            this.Height += 70;
+
+            // Style Labels & Shift Down
+            foreach (Control c in this.Controls)
+            {
+                c.Top += 60; // Shift down to avoid header overlap
+
+                if (c is Label)
+                {
+                    c.Font = new Font("Segoe UI", 10, FontStyle.Regular);
+                    c.ForeColor = Color.Black;
+                }
+                else if (c is TextBox)
+                {
+                    c.Font = new Font("Segoe UI", 10);
+                }
+            }
+
+            // Style Specific Controls matching Designer Names
+            if (btnUpdate != null)
+            {
+                btnUpdate.Text = "CẬP NHẬT";
+                btnUpdate.BackColor = Color.FromArgb(40, 167, 69); // Green
+                btnUpdate.ForeColor = Color.White;
+                btnUpdate.FlatStyle = FlatStyle.Flat;
+                btnUpdate.FlatAppearance.BorderSize = 0;
+                btnUpdate.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+                btnUpdate.Cursor = Cursors.Hand;
+            }
+
+            if (btnExit != null)
+            {
+                btnExit.Text = "THOÁT";
+                btnExit.BackColor = Color.IndianRed;
+                btnExit.ForeColor = Color.White;
+                btnExit.FlatStyle = FlatStyle.Flat;
+                btnExit.FlatAppearance.BorderSize = 0;
+                btnExit.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+                btnExit.Cursor = Cursors.Hand;
+            }
+
+            // Add Header
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = blueColor };
+            Label lblTitle = new Label { Text = "THAY ĐỔI MẬT KHẨU", AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Color.White, Location = new Point(100, 10) };
+            
+            // Center Title roughly
+            lblTitle.Location = new Point((this.ClientSize.Width - lblTitle.PreferredWidth) / 2, 12);
+            
+            pnlHeader.Controls.Add(lblTitle);
+            this.Controls.Add(pnlHeader);
         }
         private void txbPassOld_TextChanged(object sender, EventArgs e)
         {

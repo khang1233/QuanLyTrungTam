@@ -22,7 +22,7 @@ namespace QuanLyTrungTam
             this.BackColor = Color.White;
 
             // Header
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 150, 136) };
+            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(33, 150, 243) }; // Blue
             Label lblTitle = new Label { Text = "THÔNG TIN & HƯỚNG DẪN SỬ DỤNG", Location = new Point(20, 15), AutoSize = true, Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White };
             pnlHeader.Controls.Add(lblTitle);
             this.Controls.Add(pnlHeader);
@@ -38,7 +38,7 @@ namespace QuanLyTrungTam
             tabIntro.AutoScroll = true;
             tabIntro.BackColor = Color.White;
 
-            Label lblAppName = new Label { Text = "HỆ THỐNG QUẢN LÝ TRUNG TÂM ĐÀO TẠO", Font = new Font("Segoe UI", 18, FontStyle.Bold), ForeColor = Color.FromArgb(0, 121, 107), AutoSize = true, Location = new Point(30, 30) };
+            Label lblAppName = new Label { Text = "HỆ THỐNG QUẢN LÝ TRUNG TÂM ĐÀO TẠO", Font = new Font("Segoe UI", 18, FontStyle.Bold), ForeColor = Color.FromArgb(33, 150, 243), AutoSize = true, Location = new Point(30, 30) };
             Label lblVer = new Label { Text = "Cập nhật ngày: 01/01/2026", AutoSize = true, Location = new Point(30, 70) };
             Label lblDesc = new Label 
             { 
