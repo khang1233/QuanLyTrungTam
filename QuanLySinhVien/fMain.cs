@@ -222,7 +222,7 @@ namespace QuanLyTrungTam
             string role = loginAccount.Quyen;
 
             // 1. ADMIN: Hiện tất cả
-             if (role.Equals(Constants.ROLE_ADMIN, StringComparison.OrdinalIgnoreCase)) return;
+            if (role.Equals(Constants.ROLE_ADMIN, StringComparison.OrdinalIgnoreCase)) return;
 
             // 2. HỌC VIÊN: Ẩn sidebar, chuyển sang Form riêng
             if (role.Equals(Constants.ROLE_HOC_VIEN, StringComparison.OrdinalIgnoreCase))
@@ -233,8 +233,11 @@ namespace QuanLyTrungTam
             }
 
             // 3. NHÂN SỰ (Giáo viên / Trợ giảng)
+            // Note: Check both "Giáo viên" (Display/Legacy) and "GiaoVien" (Account Role Key)
             if (role.Equals(Constants.ROLE_GIAO_VIEN, StringComparison.OrdinalIgnoreCase) ||
+                role.Equals("GiaoVien", StringComparison.OrdinalIgnoreCase) ||
                 role.Equals(Constants.ROLE_TRO_GIANG, StringComparison.OrdinalIgnoreCase) ||
+                role.Equals("TroGiang", StringComparison.OrdinalIgnoreCase) ||
                 role.Equals(Constants.ROLE_NHAN_SU, StringComparison.OrdinalIgnoreCase))
             {
                 // Ẩn Dashboard & Tài Chính & Học Viên
@@ -242,17 +245,30 @@ namespace QuanLyTrungTam
                 if (btnNavHocVien != null) btnNavHocVien.Visible = false;
                 if (btnNavTaiChinh != null) btnNavTaiChinh.Visible = false;
 
-                // Ẩn menu Hệ thống (Nhật ký, Tài khoản) - Chỉ giữ nút Đổi Mật Khẩu riêng
+                // Ẩn menu TRỢ GIÚP (Không cho phép) nhưng giữ lại HỆ THỐNG để xem Tài khoản
                 foreach (Control c in pnlSidebar.Controls)
                 {
                     Button btn = c as Button;
-                    if (btn != null && btn.Text.Contains("HỆ THỐNG")) btn.Visible = false;
+                    if (btn != null && btn.Text.Contains("TRỢ GIÚP"))
+                        btn.Visible = false;
                 }
 
                 // Xử lý menu Đào tạo: Chỉ hiện TKB
-                foreach (Control c in pnlSubDaoTao.Controls)
+                if (pnlSubDaoTao != null)
                 {
-                    if (!c.Text.Contains("Thời khóa biểu")) c.Visible = false;
+                    foreach (Control c in pnlSubDaoTao.Controls)
+                    {
+                        if (!c.Text.Contains("Thời khóa biểu")) c.Visible = false;
+                    }
+                }
+
+                // Xử lý menu Hệ thống: Chỉ hiện Tài khoản (Ẩn Nhật ký)
+                if (pnlSubHeThong != null)
+                {
+                    foreach (Control c in pnlSubHeThong.Controls)
+                    {
+                        if (!c.Text.Contains("Tài khoản")) c.Visible = false;
+                    }
                 }
 
                 // Mặc định mở TKB
