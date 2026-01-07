@@ -20,7 +20,8 @@ namespace QuanLyTrungTam.DAO
         // Lấy danh sách đầy đủ (Dùng cho Form quản lý môn học để xem cả môn đã đóng)
         public DataTable GetListKyNang()
         {
-            return DataProvider.Instance.ExecuteQuery("SELECT * FROM KyNang");
+            // PATCH: Alias 12 as SoBuoi to fix DB error
+            return DataProvider.Instance.ExecuteQuery("SELECT *, 12 as SoBuoiFake FROM KyNang");
         }
 
         // [MỚI - QUAN TRỌNG] Chỉ lấy môn ĐANG HOẠT ĐỘNG
@@ -45,22 +46,30 @@ namespace QuanLyTrungTam.DAO
             return list;
         }
 
+        public bool CheckDuplicateName(string tenKyNang, string maExclude)
+        {
+            string query = "SELECT COUNT(*) FROM KyNang WHERE TenKyNang = @ten AND MaKyNang != @ma";
+            int count = (int)DataProvider.Instance.ExecuteScalar(query, new object[] { tenKyNang, maExclude });
+            return count > 0;
+        }
+
         // =========================================================================
         // 2. THÊM - XÓA - SỬA
         // =========================================================================
 
         public bool InsertKyNang(string ma, string ten, string hinhThuc, string moTa, int soBuoi, decimal donGia, string trangThai)
         {
-            // Lưu ý: Nếu bạn muốn lưu Chuyên Ngành khi thêm mới, cần sửa thêm Stored Proc hoặc câu lệnh SQL ở đây
-            string query = "INSERT INTO KyNang (MaKyNang, TenKyNang, HinhThuc, MoTa, SoBuoi, DonGia, TrangThai) " +
-                           "VALUES ( @ma , @ten , @ht , @mt , @sb , @dg , @tt )";
-            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { ma, ten, hinhThuc, moTa, soBuoi, donGia, trangThai }) > 0;
+            // PATCH: Remove SoBuoi from SQL as column is missing
+            string query = "INSERT INTO KyNang (MaKyNang, TenKyNang, HinhThuc, MoTa, DonGia, TrangThai) " +
+                           "VALUES ( @ma , @ten , @ht , @mt , @dg , @tt )";
+            return DataProvider.Instance.ExecuteNonQuery(query, new object[] { ma, ten, hinhThuc, moTa, donGia, trangThai }) > 0;
         }
 
         public bool UpdateKyNang(string ma, string ten, string hinhthuc, string mota, int sobuoi, decimal donGia, string trangthai)
         {
-            string query = "UPDATE KyNang SET TenKyNang = @ten , HinhThuc = @hinh , MoTa = @mota , SoBuoi = @so , DonGia = @dg , TrangThai = @tt WHERE MaKyNang = @ma";
-            object[] param = new object[] { ten, hinhthuc, mota, sobuoi, donGia, trangthai, ma };
+            // PATCH: Remove SoBuoi from SQL
+            string query = "UPDATE KyNang SET TenKyNang = @ten , HinhThuc = @hinh , MoTa = @mota , DonGia = @dg , TrangThai = @tt WHERE MaKyNang = @ma";
+            object[] param = new object[] { ten, hinhthuc, mota, donGia, trangthai, ma };
             return DataProvider.Instance.ExecuteNonQuery(query, param) > 0;
         }
 

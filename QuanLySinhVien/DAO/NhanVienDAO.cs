@@ -139,5 +139,12 @@ namespace QuanLyTrungTam.DAO
             string query = string.Format("INSERT INTO NhanSu (MaNS, HoTen, LoaiNS, SDT, Email, TrangThai) VALUES ('{0}', N'{1}', N'{2}', '{3}', '{4}', N'Đang làm việc')", ma, ten, loai, sdt, email);
             return DataProvider.Instance.ExecuteNonQuery(query) > 0;
         }
+        public string GetTenNhanVien(string maNS)
+        {
+            string query = "SELECT HoTen FROM NhanSu WHERE MaNS = @ma";
+            object res = DataProvider.Instance.ExecuteScalar(query, new object[] { maNS });
+            return res != null ? res.ToString() : maNS;
+        }
+
     }
 }

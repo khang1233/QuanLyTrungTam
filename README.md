@@ -27,24 +27,24 @@ Hệ thống lưu trữ và quản lý thông tin chi tiết, hỗ trợ tìm ki
 
 **Quản lý thông tin Học viên & Nhân sự:**
 <p float="left">
-  <img src="images/InfoStudents.png" width="48%" />
+  <img src="images/ThongTinHocVien.png" width="48%" />
   <img src="images/QuanLyNhanSu.png" width="48%" /> 
 </p>
 
 **Thiết lập Môn học & Lớp học:**
 <p float="left">
-  <img src="images/QuanLyMonHoc.png" width="48%" />
-  <img src="images/QuanLyLopHoc.png" width="48%" /> 
+  <img src="images/QuanLyMonHocKyNang.png" width="48%" />
+  <img src="images/LopHoc.png" width="48%" /> 
 </p>
 
 ### 3. Nghiệp vụ Xếp lịch & Đăng ký
 Chức năng cốt lõi giúp điều phối lịch học và đăng ký lớp cho học viên.
 
-- **Đăng ký lớp học (DkClass):** Giao diện xử lý việc ghi danh học viên vào lớp.
+- **Đăng ký lớp học:** Giao diện xử lý việc ghi danh học viên vào lớp.
 - **Thời khóa biểu:** Hệ thống hiển thị lịch học trực quan, hỗ trợ phát hiện trùng lịch.
 
-![DangKyLop](images/DkClass.png)
-![ThoiKhoaBieu](images/ThoiKhoaBieu.png)
+![DangKyLop](images/DangKyLop.png)
+![ThoiKhoaBieu](images/TraCuuThoiKhoaBieu.png)
 
 ### 4. Vận hành Lớp học
 Công cụ dành cho Giáo vụ/Giảng viên để theo dõi tiến độ học tập.
@@ -54,8 +54,7 @@ Công cụ dành cho Giáo vụ/Giảng viên để theo dõi tiến độ học
 
 <p float="left">
   <img src="images/DiemDanh.png" width="48%" />
-  <img src="images/QuanLyDiem.png" width="48%" /> 
-</p>
+  </p>
 
 ### 5. Tài chính & Báo cáo
 Minh bạch hóa dòng tiền và hỗ trợ thu phí hiện đại.
@@ -64,10 +63,19 @@ Minh bạch hóa dòng tiền và hỗ trợ thu phí hiện đại.
 - **Báo cáo tài chính:** Thống kê doanh thu chi tiết.
 
 <p float="left">
-  <img src="images/HocPhi.png" width="48%" />
+  <img src="images/ThuHocPhi.png" width="48%" />
   <img src="images/BaoCaoTaiChinh.png" width="48%" /> 
 </p>
 
+### 6. Tiện ích Hệ thống
+Các tính năng bổ trợ giúp nâng cao trải nghiệm người dùng.
+
+- **Cấu hình Phím tắt & Hướng dẫn:** Cho phép tùy chỉnh phím tắt và tra cứu hướng dẫn sử dụng ngay trên phần mềm.
+
+<p float="left">
+  <img src="images/PhimTat.png" width="48%" />
+  <img src="images/HuongDanSuDung.png" width="48%" /> 
+</p>
 ---
 
 ## Hướng dẫn cài đặt

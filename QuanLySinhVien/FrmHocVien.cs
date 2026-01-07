@@ -1,20 +1,25 @@
-﻿    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Data;
-    using System.Drawing;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Windows.Forms;
+﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
+using QuanLyTrungTam.BUS;
 
-    namespace QuanLyTrungTam
+namespace QuanLyTrungTam
+{
+    public partial class FrmHocVien : Form
     {
-        public partial class FrmHocVien : Form
+        public FrmHocVien()
         {
-            public FrmHocVien()
+            InitializeComponent();
+            LoadData();
+        }
+
+        private void LoadData()
+        {
+            try 
             {
-                InitializeComponent();
+                dgvHocVien.DataSource = HocVienBUS.Instance.GetListHocVien();
             }
+            catch {}
         }
     }
+}

@@ -104,5 +104,12 @@ namespace QuanLyTrungTam.DAO
                            "WHERE d.MaHV = '" + maHV + "'";
             return DataProvider.Instance.ExecuteQuery(query);
         }
+        public string GetTenHocVien(string maHV)
+        {
+            string query = "SELECT HoTen FROM HocVien WHERE MaHV = @ma";
+            object res = DataProvider.Instance.ExecuteScalar(query, new object[] { maHV });
+            return res != null ? res.ToString() : maHV;
+        }
+
     }
 }

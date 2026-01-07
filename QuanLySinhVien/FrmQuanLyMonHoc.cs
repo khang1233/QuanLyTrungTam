@@ -2,125 +2,50 @@
 using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
-using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.DTO;
+using QuanLyTrungTam.Utilities;
 
 namespace QuanLyTrungTam
 {
     public partial class FrmQuanLyMonHoc : Form
     {
-        // Control
-        private TextBox txbMa, txbTen, txbMoTa, txbSearch; // [MỚI] Thêm txbSearch
-        private Button btnSearch; // [MỚI] Thêm nút Tìm
-        private ComboBox cbHinhThuc, cbTrangThai;
-        private NumericUpDown numSoBuoi, numDonGia;
-        private Label lblTongHocPhi;
-        private DataGridView dgvMonHoc;
-
         // Biến logic
         private string curMaKN = "";
 
         public FrmQuanLyMonHoc()
         {
             InitializeComponent();
-            SetupCustomUI();
+            
+            // Cấu hình phím tắt
+            this.KeyPreview = true;
+
+            // Setup Placeholder logic
+            SetPlaceholder(txbSearch, "Nhập tên môn cần tìm..."); 
+
+            // Apply specific grid styling that designer might not capture perfectly
+            dgvMonHoc.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
+            dgvMonHoc.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            
             try { LoadData(); } catch { }
+            
+            if (cbHinhThuc.Items.Count > 0) cbHinhThuc.SelectedIndex = 0;
+            if (cbTrangThai.Items.Count > 0) cbTrangThai.SelectedIndex = 0;
         }
 
         // =========================================================================
-        // 1. THIẾT KẾ GIAO DIỆN (THÊM TÌM KIẾM GÓC DƯỚI)
+        // 1. HỆ THỐNG PHÍM TẮT (CUSTOM SHORTCUTS)
         // =========================================================================
-        private void SetupCustomUI()
+        protected override void OnKeyDown(KeyEventArgs e)
         {
-            this.Controls.Clear();
-            this.BackColor = Color.White;
+            var sm = ShortcutManager.Instance;
 
-            // 1. HEADER
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 150, 136) };
-            Label lblTitle = new Label { Text = "QUẢN LÝ MÔN HỌC & KỸ NĂNG", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 15) };
-            pnlHeader.Controls.Add(lblTitle);
+            if (sm.IsMatch("Refresh", e.KeyData)) { ResetForm(); e.Handled = true; return; }
+            if (sm.IsMatch("Save", e.KeyData)) { BtnThem_Click(null, null); e.Handled = true; return; }
+            if (sm.IsMatch("Update", e.KeyData)) { BtnSua_Click(null, null); e.Handled = true; return; }
+            if (sm.IsMatch("Delete", e.KeyData)) { BtnXoa_Click(null, null); e.Handled = true; return; }
 
-            // 2. INPUT PANEL
-            Panel pnlInput = new Panel { Dock = DockStyle.Top, Height = 260, BackColor = Color.WhiteSmoke };
-
-            txbMa = new TextBox { ReadOnly = false, BackColor = Color.LightYellow };
-            txbTen = new TextBox(); txbMoTa = new TextBox();
-            txbSearch = new TextBox();
-            SetPlaceholder(txbSearch, "Nhập tên môn cần tìm..."); // <--- HÀM TỰ VIẾT ĐỂ TẠO CHỮ MỜ
-
-            cbHinhThuc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbHinhThuc.Items.AddRange(new string[] { "Offline", "Online", "Video Record" });
-            cbHinhThuc.SelectedIndex = 0;
-
-            cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbTrangThai.Items.AddRange(new string[] { "Đang hoạt động", "Ngưng hoạt động" });
-            cbTrangThai.SelectedIndex = 0;
-
-            numSoBuoi = new NumericUpDown { Minimum = 1, Maximum = 1000, Value = 12 };
-            numDonGia = new NumericUpDown { Minimum = 0, Maximum = 1000000000, Increment = 50000, Value = 100000 };
-
-            lblTongHocPhi = new Label { Text = "TỔNG HỌC PHÍ: 1,200,000 VNĐ", Location = new Point(400, 110), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold), ForeColor = Color.Red };
-
-            numSoBuoi.ValueChanged += UpdateHocPhi;
-            numDonGia.ValueChanged += UpdateHocPhi;
-
-            // --- LAYOUT ---
-            // Cột 1
-            AddInput(pnlInput, "Mã Kỹ Năng:", txbMa, 30, 20);
-            AddInput(pnlInput, "Tên Kỹ Năng:", txbTen, 30, 60);
-            AddInput(pnlInput, "Hình Thức:", cbHinhThuc, 30, 100);
-
-            // Cột 2
-            AddInput(pnlInput, "Số Buổi:", numSoBuoi, 400, 20);
-            AddInput(pnlInput, "Đơn Giá/Buổi:", numDonGia, 400, 60);
-            pnlInput.Controls.Add(lblTongHocPhi);
-
-            // Dòng Mô tả
-            AddInput(pnlInput, "Mô Tả:", txbMoTa, 30, 140);
-            txbMoTa.Width = 600;
-
-            // [MỚI] Dòng Tìm Kiếm (Nằm dưới Mô Tả)
-            AddInput(pnlInput, "Tìm Kiếm:", txbSearch, 30, 190);
-            txbSearch.Width = 300; // Ô tìm kiếm dài vừa phải
-
-            // [MỚI] Nút Kính Lúp (Bên cạnh ô tìm kiếm)
-            btnSearch = new Button { Text = "🔍", Location = new Point(440, 187), Size = new Size(50, 30), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
-            btnSearch.Click += (s, e) => FilterData(txbSearch.Text); // Sự kiện tìm
-            txbSearch.TextChanged += (s, e) => FilterData(txbSearch.Text); // Tìm ngay khi gõ
-            pnlInput.Controls.Add(btnSearch);
-
-            // Cột 3 (Trạng Thái & Nút chức năng)
-            AddInput(pnlInput, "Trạng Thái:", cbTrangThai, 770, 20);
-
-            Button btnThem = CreateBtn("Thêm Mới", Color.LightGreen, 770, 70); btnThem.ForeColor = Color.Black;
-            Button btnSua = CreateBtn("Cập Nhật", Color.LightBlue, 770, 120); btnSua.ForeColor = Color.Black;
-            Button btnXoa = CreateBtn("Xóa Môn", Color.LightPink, 910, 70); btnXoa.ForeColor = Color.Black;
-            Button btnLamMoi = CreateBtn("Làm Mới", Color.Gainsboro, 910, 120); btnLamMoi.ForeColor = Color.Black;
-
-            btnThem.Click += BtnThem_Click;
-            btnSua.Click += BtnSua_Click;
-            btnXoa.Click += BtnXoa_Click;
-            btnLamMoi.Click += (s, e) => ResetForm();
-
-            pnlInput.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLamMoi });
-
-            // 3. GRIDVIEW
-            Panel pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
-            GroupBox grpGrid = new GroupBox { Text = " Danh sách môn học hiện có ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-
-            dgvMonHoc = new DataGridView();
-            StyleGrid(dgvMonHoc);
-
-            dgvMonHoc.DataError += DgvMonHoc_DataError;
-            dgvMonHoc.CellClick += DgvMonHoc_CellClick;
-            dgvMonHoc.CellFormatting += DgvMonHoc_CellFormatting;
-
-            grpGrid.Controls.Add(dgvMonHoc);
-            pnlGridContainer.Controls.Add(grpGrid);
-
-            this.Controls.Add(pnlGridContainer);
-            this.Controls.Add(pnlInput);
-            this.Controls.Add(pnlHeader);
+            base.OnKeyDown(e);
         }
 
         // =========================================================================
@@ -130,16 +55,16 @@ namespace QuanLyTrungTam
         // [MỚI] Hàm lọc dữ liệu trên GridView
         private void FilterData(string keyword)
         {
+            if (keyword == "Nhập tên môn cần tìm...") keyword = "";
             DataTable dt = dgvMonHoc.DataSource as DataTable;
             if (dt != null)
             {
                 if (string.IsNullOrEmpty(keyword))
                 {
-                    dt.DefaultView.RowFilter = ""; // Hiện tất cả
+                    dt.DefaultView.RowFilter = "";
                 }
                 else
                 {
-                    // Lọc theo Mã hoặc Tên
                     dt.DefaultView.RowFilter = string.Format("MaKyNang LIKE '%{0}%' OR TenKyNang LIKE '%{0}%'", keyword);
                 }
             }
@@ -153,26 +78,18 @@ namespace QuanLyTrungTam
 
         void LoadData()
         {
-            dgvMonHoc.DataSource = KyNangDAO.Instance.GetListKyNang();
+            dgvMonHoc.DataSource = KyNangBUS.Instance.GetListKyNang();
 
-            if (dgvMonHoc.Columns.Contains("TrangThai") && dgvMonHoc.Columns["TrangThai"] is DataGridViewCheckBoxColumn)
-            {
-                var oldCol = dgvMonHoc.Columns["TrangThai"];
-                var newCol = new DataGridViewTextBoxColumn();
-                newCol.Name = oldCol.Name;
-                newCol.DataPropertyName = oldCol.DataPropertyName;
-                newCol.HeaderText = "Trạng Thái";
-                newCol.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                int idx = oldCol.Index;
-                dgvMonHoc.Columns.Remove(oldCol);
-                dgvMonHoc.Columns.Insert(idx, newCol);
-            }
+            // Gắn lại sự kiện
+            dgvMonHoc.DataError -= DgvMonHoc_DataError;
+            dgvMonHoc.DataError += DgvMonHoc_DataError;
+            dgvMonHoc.CellClick -= DgvMonHoc_CellClick;
+            dgvMonHoc.CellClick += DgvMonHoc_CellClick;
+            dgvMonHoc.CellFormatting -= DgvMonHoc_CellFormatting;
+            dgvMonHoc.CellFormatting += DgvMonHoc_CellFormatting;
 
-            if (dgvMonHoc.Columns.Contains("HocPhi"))
-            {
-                dgvMonHoc.Columns["HocPhi"].DefaultCellStyle.Format = "N0";
-                dgvMonHoc.Columns["HocPhi"].HeaderText = "Tổng Học Phí";
-            }
+            // Use Helper
+            GridViewHelper.StandardizeGrid(dgvMonHoc, new System.Collections.Generic.List<string> { "sobuoifake" });
         }
 
         private void DgvMonHoc_DataError(object sender, DataGridViewDataErrorEventArgs e) { e.ThrowException = false; }
@@ -182,7 +99,7 @@ namespace QuanLyTrungTam
             if (dgvMonHoc.Columns[e.ColumnIndex].Name == "TrangThai" && e.Value != null)
             {
                 string val = e.Value.ToString().ToLower();
-                bool isActive = (val == "1" || val == "true");
+                bool isActive = (val == "1" || val == "true" || val == "đang hoạt động");
                 e.Value = isActive ? "Đang hoạt động" : "Ngưng hoạt động";
                 e.CellStyle.ForeColor = isActive ? Color.Green : Color.Red;
             }
@@ -225,6 +142,8 @@ namespace QuanLyTrungTam
             catch { }
         }
 
+        // --- BUTTON EVENTS ---
+
         private void BtnThem_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txbMa.Text)) { MessageBox.Show("Vui lòng nhập Mã Kỹ Năng!"); txbMa.Focus(); return; }
@@ -232,19 +151,26 @@ namespace QuanLyTrungTam
 
             string status = cbTrangThai.SelectedIndex == 0 ? "1" : "0";
 
-            if (KyNangDAO.Instance.InsertKyNang(
-                txbMa.Text.Trim().ToUpper(),
-                txbTen.Text,
-                cbHinhThuc.Text,
-                txbMoTa.Text,
-                (int)numSoBuoi.Value,
-                numDonGia.Value,
-                status))
+            try
             {
-                MessageBox.Show("Thêm môn thành công!");
-                LoadData(); ResetForm();
+                if (KyNangBUS.Instance.InsertKyNang(
+                    txbMa.Text.Trim().ToUpper(),
+                    txbTen.Text,
+                    cbHinhThuc.Text,
+                    txbMoTa.Text,
+                    (int)numSoBuoi.Value,
+                    numDonGia.Value,
+                    status))
+                {
+                    MessageBox.Show("Thêm môn thành công!");
+                    LoadData(); ResetForm();
+                }
+                else MessageBox.Show("Lỗi: Mã kỹ năng có thể đã tồn tại!");
             }
-            else MessageBox.Show("Lỗi: Mã kỹ năng có thể đã tồn tại!");
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void BtnSua_Click(object sender, EventArgs e)
@@ -254,7 +180,7 @@ namespace QuanLyTrungTam
 
             try
             {
-                if (KyNangDAO.Instance.UpdateKyNang(
+                if (KyNangBUS.Instance.UpdateKyNang(
                     curMaKN,
                     txbTen.Text,
                     cbHinhThuc.Text,
@@ -268,7 +194,7 @@ namespace QuanLyTrungTam
                 }
                 else MessageBox.Show("Lỗi cập nhật!");
             }
-            catch (Exception ex) { MessageBox.Show("Lỗi: " + ex.Message); }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         }
 
         private void BtnXoa_Click(object sender, EventArgs e)
@@ -276,9 +202,28 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(curMaKN)) return;
             if (MessageBox.Show($"Xóa môn {txbTen.Text}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                if (KyNangDAO.Instance.DeleteKyNang(curMaKN)) { MessageBox.Show("Đã xóa."); LoadData(); ResetForm(); }
-                else MessageBox.Show("Không thể xóa (đang được sử dụng).");
+                try
+                {
+                    if (KyNangBUS.Instance.DeleteKyNang(curMaKN)) { MessageBox.Show("Đã xóa."); LoadData(); ResetForm(); }
+                    else MessageBox.Show("Không thể xóa (đang được sử dụng).");
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
             }
+        }
+
+        private void BtnLamMoi_Click(object sender, EventArgs e)
+        {
+             ResetForm();
+        }
+
+        private void BtnSearch_Click(object sender, EventArgs e)
+        {
+             FilterData(txbSearch.Text);
+        }
+
+        private void TxbSearch_TextChanged(object sender, EventArgs e)
+        {
+             FilterData(txbSearch.Text);
         }
 
         private void ResetForm()
@@ -291,48 +236,12 @@ namespace QuanLyTrungTam
             FilterData(""); // Reset bộ lọc
         }
 
-        void AddInput(Panel p, string lb, Control c, int x, int y)
-        {
-            Label l = new Label { Text = lb, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
-            c.Location = new Point(x + 100, y - 3); c.Width = 230; c.Font = new Font("Segoe UI", 10);
-            p.Controls.Add(l); p.Controls.Add(c);
-        }
-
-        Button CreateBtn(string t, Color c, int x, int y)
-        {
-            return new Button { Text = t, Location = new Point(x, y), Size = new Size(130, 38), BackColor = c, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9, FontStyle.Bold), Cursor = Cursors.Hand };
-        }
-
-        private void StyleGrid(DataGridView dgv)
-        {
-            dgv.Dock = DockStyle.Fill; dgv.BackgroundColor = Color.White; dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect; dgv.ReadOnly = true; dgv.RowHeadersVisible = false;
-            dgv.ColumnHeadersHeight = 35; dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136); dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold); dgv.DefaultCellStyle.ForeColor = Color.Black;
-        }
         private void SetPlaceholder(TextBox txt, string holder)
         {
             txt.Text = holder;
             txt.ForeColor = Color.Gray;
-
-            txt.Enter += (s, e) =>
-            {
-                if (txt.Text == holder)
-                {
-                    txt.Text = "";
-                    txt.ForeColor = Color.Black;
-                }
-            };
-
-            txt.Leave += (s, e) =>
-            {
-                if (string.IsNullOrWhiteSpace(txt.Text))
-                {
-                    txt.Text = holder;
-                    txt.ForeColor = Color.Gray;
-                }
-            };
+            txt.Enter += (s, e) => { if (txt.Text == holder) { txt.Text = ""; txt.ForeColor = Color.Black; } };
+            txt.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txt.Text)) { txt.Text = holder; txt.ForeColor = Color.Gray; } };
         }
     }
 }

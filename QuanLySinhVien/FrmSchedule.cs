@@ -1,4 +1,6 @@
-﻿using QuanLyTrungTam.DAO;
+﻿using QuanLyTrungTam.BUS;
+using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.DTO;
 using QuanLyTrungTam.Utilities;
 using System;
 using System.Data;
@@ -9,127 +11,57 @@ namespace QuanLyTrungTam
 {
     public partial class FrmSchedule : Form
     {
-        private ComboBox cbFilterType;
-        private ComboBox cbFilterValue;
-        private TextBox txbSearch; // <--- MỚI: Ô tìm kiếm mã lớp
-        private DataGridView dgvSchedule;
-        private Button btnSearch;
-
         public FrmSchedule()
         {
             InitializeComponent();
-            SetupBetterUI();
+            
+            // Shortcuts
+            this.KeyPreview = true;
+            
+            cbFilterType.SelectedIndex = 0;
             LoadInitData();
         }
 
-        // =========================================================================
-        // 1. THIẾT KẾ GIAO DIỆN (ĐÃ CĂN CHỈNH KHOẢNG CÁCH & THÊM TÌM KIẾM)
-        // =========================================================================
-        private void SetupBetterUI()
+        protected override void OnKeyDown(KeyEventArgs e)
         {
-            this.Controls.Clear();
-            this.BackColor = Color.White;
-            this.Size = new Size(1100, 700);
-
-            // --- A. HEADER ---
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 150, 136) };
-            Label lblTitle = new Label { Text = "TRA CỨU THỜI KHÓA BIỂU", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 15) };
-            pnlHeader.Controls.Add(lblTitle);
-
-            // --- B. TOOLBAR (Tăng chiều cao lên 100 để chia 2 dòng cho thoáng) ---
-            Panel pnlTool = new Panel { Dock = DockStyle.Top, Height = 100, BackColor = Color.WhiteSmoke };
-
-            // Dòng 1: Bộ lọc chính (Y = 15)
-            Label lblType = new Label { Text = "Xem theo:", Location = new Point(20, 18), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            cbFilterType = new ComboBox { Location = new Point(100, 15), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
-            cbFilterType.Items.AddRange(new string[] { "Tất cả lịch học", "Theo Giáo Viên", "Theo Phòng Học", "Theo Lớp Học" });
-            cbFilterType.SelectedIndex = 0;
-            cbFilterType.SelectedIndexChanged += CbFilterType_SelectedIndexChanged;
-
-            // Đẩy tọa độ X của "Chọn đối tượng" ra xa hơn (320 -> 350) để tránh bị dính
-            Label lblValue = new Label { Text = "Chọn đối tượng:", Location = new Point(350, 18), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            cbFilterValue = new ComboBox { Location = new Point(470, 15), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10) };
-            cbFilterValue.Enabled = false;
-
-            btnSearch = new Button { Text = "TẢI DỮ LIỆU", Location = new Point(750, 12), Size = new Size(120, 35), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
-            btnSearch.Click += BtnSearch_Click;
-
-            // Dòng 2: Tìm kiếm nhanh (MỚI - Y = 60)
-            Label lblSearch = new Label { Text = "Tìm nhanh (Mã/Tên):", Location = new Point(20, 63), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Color.DarkBlue };
-            txbSearch = new TextBox { Location = new Point(180, 60), Width = 400, Font = new Font("Segoe UI", 10) };
-            txbSearch.TextChanged += TxbSearch_TextChanged; // Sự kiện gõ phím
-
-            pnlTool.Controls.AddRange(new Control[] { lblType, cbFilterType, lblValue, cbFilterValue, btnSearch, lblSearch, txbSearch });
-
-            // --- C. GRIDVIEW ---
-            Panel pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(15) };
-            GroupBox grpGrid = new GroupBox { Text = " Chi tiết lịch học ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-
-            dgvSchedule = new DataGridView();
-            StyleGrid(dgvSchedule);
-            grpGrid.Controls.Add(dgvSchedule);
-            pnlGridContainer.Controls.Add(grpGrid);
-
-            // Thứ tự Add (Quan trọng để không bị che)
-            this.Controls.Add(pnlGridContainer);
-            this.Controls.Add(pnlTool);
-            this.Controls.Add(pnlHeader);
+            if (e.Control && e.KeyCode == Keys.R || e.KeyCode == Keys.F5)
+            {
+                BtnSearch_Click(null, null);
+                e.Handled = true;
+            }
+            base.OnKeyDown(e);
         }
 
-        // =========================================================================
-        // 2. LOGIC XỬ LÝ
-        // =========================================================================
-        // File: FrmSchedule.cs
-
-        // 1. Sửa lại hàm LoadInitData
         private void LoadInitData()
         {
-            // Nếu là Admin thì load hết như cũ
-            if (AppSession.CurrentUser.Quyen.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            // Use UserSession instead of AppSession
+            if (UserSession.Instance.IsAdmin())
             {
                 BtnSearch_Click(null, null);
             }
             else
             {
-                // NẾU LÀ GIÁO VIÊN: Khóa giao diện filter, chỉ load lịch của chính mình
+                // Lock UI for Teachers or non-Admins
                 LockUIForTeacher();
                 LoadTeacherSchedule();
             }
         }
 
-        // 2. Thêm hàm Khóa giao diện (Ẩn các ô chọn Giáo viên khác đi)
         private void LockUIForTeacher()
         {
-            // Ẩn hoặc Disable các combobox chọn lọc
             cbFilterType.Visible = false;
             cbFilterValue.Visible = false;
-            // Đổi tiêu đề label
-            foreach (Control c in this.Controls)
-            {
-                if (c is Panel pnl) // Tìm trong Panel Tool
-                {
-                    foreach (Control child in pnl.Controls)
-                    {
-                        if (child.Text == "Xem theo:") child.Visible = false;
-                        if (child.Text == "Chọn đối tượng:") child.Visible = false;
-                    }
-                }
-            }
+            lblType.Visible = false;
+            lblValue.Visible = false;
         }
-
-        // 3. Hàm load riêng cho Giáo viên
-        // File: FrmSchedule.cs
-
-        // File: FrmSchedule.cs
 
         private void LoadTeacherSchedule()
         {
-            string maNS = AppSession.CurrentUser.MaNguoiDung;
+            string maNS = UserSession.Instance.CurrentUser.MaNguoiDung;
 
-            // Sửa lại câu truy vấn: Đổi @ma thành @ma1 và @ma2 để không bị trùng tên biến
             string query = @"
         SELECT l.MaLop, l.TenLop, k.TenKyNang, l.Thu, l.CaHoc, p.TenPhong, l.TrangThai,
-               ns1.HoTen as TenGV, ns2.HoTen as TenTG
+               ns1.HoTen as TenGV, ns2.HoTen as TenTG, l.NgayKetThuc, 12 as SoBuoi
         FROM LopHoc l
         JOIN KyNang k ON l.MaKyNang = k.MaKyNang
         LEFT JOIN PhongHoc p ON l.MaPhong = p.MaPhong
@@ -137,10 +69,10 @@ namespace QuanLyTrungTam
         LEFT JOIN NhanSu ns2 ON l.MaTroGiang = ns2.MaNS
         WHERE l.MaGiaoVien = @ma1 OR l.MaTroGiang = @ma2";
 
-            // Truyền tham số: Vẫn truyền maNS 2 lần, nhưng lần này SQL sẽ hiểu là cho @ma1 và @ma2
             DataTable dt = DataProvider.Instance.ExecuteQuery(query, new object[] { maNS, maNS });
 
             dgvSchedule.DataSource = dt;
+            FormatGrid();
         }
 
         private void CbFilterType_SelectedIndexChanged(object sender, EventArgs e)
@@ -149,7 +81,7 @@ namespace QuanLyTrungTam
             cbFilterValue.Items.Clear();
             int type = cbFilterType.SelectedIndex;
 
-            if (type == 0) // Tất cả
+            if (type == 0) // Todos
             {
                 cbFilterValue.Enabled = false;
             }
@@ -182,7 +114,7 @@ namespace QuanLyTrungTam
             DataTable dtResult = new DataTable();
             DataTable allLop = LopHocDAO.Instance.GetAllLop();
 
-            if (cbFilterType.SelectedIndex == 0) // Tất cả
+            if (cbFilterType.SelectedIndex == 0) // Todos
             {
                 dtResult = allLop;
             }
@@ -203,31 +135,26 @@ namespace QuanLyTrungTam
             dgvSchedule.DataSource = dtResult;
             FormatGrid();
 
-            // Reset ô tìm kiếm sau khi tải lại
             txbSearch.Text = "";
         }
 
-        // --- MỚI: LOGIC TÌM KIẾM THEO MÃ LỚP ---
         private void TxbSearch_TextChanged(object sender, EventArgs e)
         {
-            // Lấy dữ liệu đang hiển thị trên lưới
             DataTable dt = dgvSchedule.DataSource as DataTable;
             if (dt != null)
             {
                 string keyword = txbSearch.Text.Trim();
                 if (string.IsNullOrEmpty(keyword))
                 {
-                    dt.DefaultView.RowFilter = ""; // Xóa bộ lọc
+                    dt.DefaultView.RowFilter = "";
                 }
                 else
                 {
-                    // Lọc theo Mã Lớp HOẶC Tên Lớp
                     dt.DefaultView.RowFilter = string.Format("MaLop LIKE '%{0}%' OR TenLop LIKE '%{0}%'", keyword);
                 }
             }
         }
 
-        // --- Helper Styles ---
         private void FormatGrid()
         {
             string[] hide = { "MaKyNang", "MaGiaoVien", "MaTroGiang", "MaPhong", "SiSoToiDa", "NgayBatDau" };
@@ -242,6 +169,20 @@ namespace QuanLyTrungTam
             SetHeader("Thu", "Lịch Học");
             SetHeader("CaHoc", "Ca Học");
             SetHeader("TrangThai", "Trạng Thái");
+            SetHeader("NgayKetThuc", "Ngày Kết Thúc");
+            SetHeader("SoBuoi", "Số Buổi");
+
+            if (dgvSchedule.Columns.Contains("NgayKetThuc")) 
+            {
+                dgvSchedule.Columns["NgayKetThuc"].DefaultCellStyle.Format = "dd/MM/yyyy";
+                dgvSchedule.Columns["NgayKetThuc"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+            if (dgvSchedule.Columns.Contains("SoBuoi")) 
+            {
+                dgvSchedule.Columns["SoBuoi"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+            
+            StyleGrid(dgvSchedule);
         }
 
         private void SetHeader(string colName, string text)
@@ -251,7 +192,6 @@ namespace QuanLyTrungTam
 
         private void StyleGrid(DataGridView dgv)
         {
-            dgv.Dock = DockStyle.Fill;
             dgv.BackgroundColor = Color.White;
             dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -259,7 +199,7 @@ namespace QuanLyTrungTam
             dgv.RowHeadersVisible = false;
             dgv.ColumnHeadersHeight = 40;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgv.DefaultCellStyle.Font = new Font("Segoe UI", 10);

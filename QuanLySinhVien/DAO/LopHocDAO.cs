@@ -127,7 +127,7 @@ namespace QuanLyTrungTam.DAO
                     L.MaGiaoVien, L.MaTroGiang, L.MaPhong, L.MaKyNang,
                     L.NgayBatDau,
                     ISNULL(L.NgayKetThuc, DATEADD(month, 3, L.NgayBatDau)) as NgayKetThuc,
-                    K.TenKyNang, K.SoBuoi,
+                    K.TenKyNang, 12 as SoBuoi,
                     P.TenPhong,
                     NS1.HoTen as TenGV,
                     NS2.HoTen as TenTG
@@ -144,6 +144,13 @@ namespace QuanLyTrungTam.DAO
         {
             string query = "SELECT * FROM LopHoc WHERE MaKyNang = @maKN";
             return DataProvider.Instance.ExecuteQuery(query, new object[] { maKyNang });
+        }
+
+        public bool CheckDuplicateName(string tenLop, string maExclude)
+        {
+            string query = "SELECT COUNT(*) FROM LopHoc WHERE TenLop = @ten AND MaLop != @ma";
+            int count = (int)DataProvider.Instance.ExecuteScalar(query, new object[] { tenLop, maExclude });
+            return count > 0;
         }
 
         public string GetNewMaLop(string maKyNang)
@@ -222,13 +229,19 @@ namespace QuanLyTrungTam.DAO
 
         public DataRow GetClassScheduleInfo(string maLop)
         {
-            string query = @"SELECT l.NgayBatDau, l.Thu, k.SoBuoi 
+            // Note: Patching SoBuoi to 12 as DB column is missing/invalid
+            string query = @"SELECT l.NgayBatDau, l.Thu, 12 as SoBuoi 
                              FROM LopHoc l 
                              JOIN KyNang k ON l.MaKyNang = k.MaKyNang 
                              WHERE l.MaLop = @id";
             DataTable dt = DataProvider.Instance.ExecuteQuery(query, new object[] { maLop });
             if (dt.Rows.Count > 0) return dt.Rows[0];
             return null;
+        }
+        public DataTable GetClassesByCa(string caHoc, string maLopExclude = "")
+        {
+            string query = "SELECT * FROM LopHoc WHERE CaHoc = @ca AND MaLop != @ma";
+            return DataProvider.Instance.ExecuteQuery(query, new object[] { caHoc, maLopExclude });
         }
     }
 }

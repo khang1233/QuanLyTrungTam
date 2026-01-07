@@ -17,40 +17,59 @@ namespace QuanLyTrungTam.DAO
         // 1. XỬ LÝ ĐĂNG NHẬP (HỖ TRỢ CẢ NHÂN SỰ)
         // =================================================================================
         // File: DAO/AccountDAO.cs
-        public bool Login(string userName, string passWord, string role)
+        // =================================================================================
+        // 1. XỬ LÝ ĐĂNG NHẬP (MỚI - KHÔNG CẦN CHỌN ROLE)
+        // =================================================================================
+        public Account Login(string userName, string passWord)
         {
-            string query = "";
-            object[] parameters = null;
-
-            // [FIX LỖI QUAN TRỌNG]: Thêm điều kiện kiểm tra trạng thái linh hoạt hơn
-            // Chấp nhận: 1, Hoạt động, Active, Chờ xếp lớp (cho học viên mới)
+            // Điều kiện trạng thái
             string conditionStatus = " AND (TrangThai = '1' OR TrangThai = N'Hoạt động' OR TrangThai = N'Active' OR TrangThai = N'Chờ xếp lớp' OR TrangThai = N'Đang học')";
-
-            if (role == "NhanSu")
-            {
-                // Nếu là Nhân sự: Kiểm tra Giáo viên HOẶC Trợ giảng
-                query = "SELECT * FROM TaiKhoan WHERE TenDangNhap = @u AND MatKhau = @p AND (Quyen = 'GiaoVien' OR Quyen = 'TroGiang')" + conditionStatus;
-                parameters = new object[] { userName, passWord }; // Chỉ cần 2 tham số
-            }
-            else
-            {
-                // Nếu là Admin hoặc Học viên: Kiểm tra chính xác quyền
-                query = "SELECT * FROM TaiKhoan WHERE TenDangNhap = @u AND MatKhau = @p AND Quyen = @r" + conditionStatus;
-                parameters = new object[] { userName, passWord, role }; // Cần 3 tham số
-            }
+            
+            // Query kiểm tra User + Pass (Không check Quyen)
+            string query = "SELECT * FROM TaiKhoan WHERE TenDangNhap = @u AND MatKhau = @p" + conditionStatus;
+            object[] parameters = new object[] { userName, passWord };
 
             DataTable result = DataProvider.Instance.ExecuteQuery(query, parameters);
 
             if (result.Rows.Count > 0)
             {
-                LogLogin(userName, "Thành công", "Đăng nhập bằng mật khẩu");
-                return true;
+                // Đăng nhập thành công -> Trả về Account
+                LogLogin(userName, "Thành công", "Đăng nhập v2 (No Role)");
+                return new Account(result.Rows[0]);
             }
             else
             {
-                // LogLogin(userName, "Thất bại", "Sai mật khẩu hoặc vai trò");
-                return false;
+                // LogLogin(userName, "Thất bại", "Sai mật khẩu hoặc tài khoản");
+                return null;
             }
+        }
+
+        // (Cũ - Giữ lại để tránh lỗi compile nếu nơi khác còn gọi, nhưng khuyến khích dùng cái trên)
+        public bool Login(string userName, string passWord, string role)
+        {
+            // ... Logic cũ ...
+            string conditionStatus = " AND (TrangThai = '1' OR TrangThai = N'Hoạt động' OR TrangThai = N'Active' OR TrangThai = N'Chờ xếp lớp' OR TrangThai = N'Đang học')";
+            string query = "";
+            object[] parameters = null;
+
+            if (role == "NhanSu")
+            {
+                query = "SELECT * FROM TaiKhoan WHERE TenDangNhap = @u AND MatKhau = @p AND (Quyen = 'GiaoVien' OR Quyen = 'TroGiang')" + conditionStatus;
+                parameters = new object[] { userName, passWord };
+            }
+            else
+            {
+                query = "SELECT * FROM TaiKhoan WHERE TenDangNhap = @u AND MatKhau = @p AND Quyen = @r" + conditionStatus;
+                parameters = new object[] { userName, passWord, role };
+            }
+
+            DataTable result = DataProvider.Instance.ExecuteQuery(query, parameters);
+            if (result.Rows.Count > 0)
+            {
+                LogLogin(userName, "Thành công", "Đăng nhập role " + role);
+                return true;
+            }
+            return false;
         }
 
         public bool LoginGoogle(string email)

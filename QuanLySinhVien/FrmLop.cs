@@ -1,22 +1,17 @@
-﻿using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
+using QuanLyTrungTam.DTO;
+using QuanLyTrungTam.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
+using QuanLyTrungTam.DAO;
 
 namespace QuanLyTrungTam
 {
     public partial class FrmLop : Form
     {
-        // 1. KHAI BÁO BIẾN
-        private TextBox txbMaLop, txbTenLop, txbSearch;
-        private ComboBox cbThu, cbCaHoc;
-        private ComboBox cbMonHoc, cbGiaoVien, cbTroGiang, cbPhongHoc, cbTrangThai;
-        private NumericUpDown nmSiSo;
-        private Button btnSearch;
-        private DataGridView dgvMain;
-
         public FrmLop()
         {
             InitializeComponent();
@@ -27,231 +22,24 @@ namespace QuanLyTrungTam
         // 2. THIẾT KẾ GIAO DIỆN
         private void SetupCustomUI()
         {
-            this.Controls.Clear();
-            this.BackColor = Color.White;
-            this.Size = new Size(1250, 780);
-
-            // --- A. HEADER ---
-            Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.FromArgb(0, 150, 136) };
-            Label lblTitle = new Label { Text = "QUẢN LÝ LỚP HỌC & XẾP LỊCH", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(20, 15) };
-            pnlHeader.Controls.Add(lblTitle);
-
-            // --- B. INPUT PANEL ---
-            Panel pnlInput = new Panel { Dock = DockStyle.Top, Height = 360, BackColor = Color.WhiteSmoke };
-
-            txbMaLop = new TextBox { ReadOnly = true, BackColor = Color.LightYellow };
-            txbTenLop = new TextBox();
-
-            cbThu = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbThu.Items.AddRange(new string[] {
-                "T2 (Thứ Hai)", "T3 (Thứ Ba)", "T4 (Thứ Tư)", "T5 (Thứ Năm)", "T6 (Thứ Sáu)", "T7 (Thứ Bảy)", "CN (Chủ Nhật)",
-                "T2-T4", "T2-T5", "T2-T6", "T3-T5", "T3-T6", "T4-T6", "T5-T7", "T7-CN",
-                "T2-T4-T6", "T3-T5-T7", "T2-T3-T4-T5-T6"
-            });
-            cbThu.SelectedIndex = 0;
-
-            cbCaHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbCaHoc.Items.AddRange(new string[] {
-                "Ca 1 (08:00 - 10:00)", "Ca 2 (10:00 - 12:00)",
-                "Ca 3 (13:30 - 15:30)", "Ca 4 (15:30 - 17:30)",
-                "Ca Tối 1 (17:45 - 19:15)", "Ca Tối 2 (19:30 - 21:00)"
-            });
-            cbCaHoc.SelectedIndex = 0;
-
-            txbSearch = new TextBox(); SetPlaceholder(txbSearch, "Tìm kiếm...");
-
-            cbMonHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbGiaoVien = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbTroGiang = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbPhongHoc = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-
-            cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            cbTrangThai.Items.AddRange(new string[] { "Đang học", "Đã kết thúc", "Tạm ngưng", "Sắp mở" });
-            cbTrangThai.SelectedIndex = 0;
-
-            nmSiSo = new NumericUpDown { Minimum = 1, Maximum = 100, Value = 20 };
-
-            // Bố cục
-            int col1 = 30; int col2 = 450; int col3 = 850; int rowHeight = 50;
-
-            AddInput(pnlInput, "Môn Học:", cbMonHoc, col1, 20);
-            AddInput(pnlInput, "Mã Lớp (Auto):", txbMaLop, col1, 20 + rowHeight);
-            AddInput(pnlInput, "Tên Lớp:", txbTenLop, col1, 20 + rowHeight * 2);
-            AddInput(pnlInput, "Phòng Học:", cbPhongHoc, col1, 20 + rowHeight * 3);
-
-            AddInput(pnlInput, "Lịch Học (Thứ):", cbThu, col2, 20);
-            AddInput(pnlInput, "Ca Học (Giờ):", cbCaHoc, col2, 20 + rowHeight);
-            AddInput(pnlInput, "Giáo Viên:", cbGiaoVien, col2, 20 + rowHeight * 2);
-            AddInput(pnlInput, "Trợ Giảng:", cbTroGiang, col2, 20 + rowHeight * 3);
-
-            AddInput(pnlInput, "Sĩ Số Tối Đa:", nmSiSo, col3, 20);
-            AddInput(pnlInput, "Trạng Thái:", cbTrangThai, col3, 20 + rowHeight);
-
-            AddInput(pnlInput, "Tìm nhanh:", txbSearch, col1, 260);
-            txbSearch.Width = 350;
-            btnSearch = new Button { Text = "🔍", Location = new Point(550, 257), Size = new Size(50, 30), BackColor = Color.Orange, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
-            btnSearch.Click += (s, e) => FilterData(txbSearch.Text);
-            txbSearch.TextChanged += (s, e) => FilterData(txbSearch.Text);
-            pnlInput.Controls.Add(btnSearch);
-
-            // Buttons
-            Button btnThem = CreateBtn("Mở Lớp Mới", Color.Teal, col3, 140);
-            Button btnSua = CreateBtn("Cập Nhật", Color.DodgerBlue, col3, 190);
-            Button btnXoa = CreateBtn("Xóa Lớp", Color.IndianRed, col3 + 140, 140);
-            Button btnLamMoi = CreateBtn("Làm Mới", Color.Gray, col3 + 140, 190);
-
-            btnThem.Click += BtnAdd_Click;
-            btnSua.Click += BtnEdit_Click;
-            btnXoa.Click += BtnDel_Click;
-            btnLamMoi.Click += (s, e) => ResetForm();
-
-            pnlInput.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLamMoi });
-
-            // --- C. GRIDVIEW ---
-            Panel pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0), BackColor = Color.WhiteSmoke };
-            Panel pnlHeaderGrid = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.FromArgb(0, 150, 136) };
-            Label lblTitleGrid = new Label { Text = "DANH SÁCH LỚP HỌC", Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(15, 10) };
-            pnlHeaderGrid.Controls.Add(lblTitleGrid);
-
-            dgvMain = new DataGridView();
+            // Cấu hình phím tắt
+            this.KeyPreview = true;
+            
+            // Apply custom styles that designer might miss
             StyleGrid(dgvMain);
-            dgvMain.CellClick += DgvMain_CellClick;
-            dgvMain.CellFormatting += DgvMain_CellFormatting;
-            dgvMain.DataError += (s, e) => { e.ThrowException = false; };
+            SetPlaceholder(txbSearch, "Tìm kiếm...");
+            
+            LoadData();
 
-            pnlGridContainer.Controls.Add(dgvMain);
-            pnlGridContainer.Controls.Add(pnlHeaderGrid);
-            dgvMain.BringToFront();
-
-            this.Controls.Add(pnlGridContainer);
-            this.Controls.Add(pnlInput);
-            this.Controls.Add(pnlHeader);
+            // Setup Default Values
+            if (cbThu.Items.Count > 0) cbThu.SelectedIndex = 0;
+            if (cbCaHoc.Items.Count > 0) cbCaHoc.SelectedIndex = 0;
+            if (cbTrangThai.Items.Count > 0) cbTrangThai.SelectedIndex = 0;
         }
 
-        // 3. LOGIC XỬ LÝ DỮ LIỆU (LOAD DATA & CALCULATE)
-        void LoadData()
-        {
-            try
-            {
-                // [FIX LỖI 1]: Dùng hàm GetListKyNangActive() thay vì GetListKyNang()
-                // Chỉ load những môn đang hoạt động để tránh đăng ký nhầm
-                DataTable dtMon = KyNangDAO.Instance.GetListKyNangActive();
-
-                if (dtMon != null && dtMon.Rows.Count > 0)
-                {
-                    cbMonHoc.DataSource = dtMon;
-                    cbMonHoc.DisplayMember = "TenKyNang";
-                    cbMonHoc.ValueMember = "MaKyNang";
-
-                    cbMonHoc.SelectedIndexChanged -= CbMonHoc_SelectedIndexChanged;
-                    cbMonHoc.SelectedIndexChanged += CbMonHoc_SelectedIndexChanged;
-                    cbMonHoc.SelectedIndex = 0;
-                }
-                else
-                {
-                    cbMonHoc.DataSource = null; // Clear nếu không có môn nào
-                }
-
-                // Load Combo Phòng
-                cbPhongHoc.DataSource = PhongHocDAO.Instance.GetListPhong();
-                cbPhongHoc.DisplayMember = "TenPhong"; cbPhongHoc.ValueMember = "MaPhong";
-
-                // Load Combo Nhân Sự
-                DataTable dtNS = NhanVienDAO.Instance.GetListNhanVien();
-
-                // 1. GIÁO VIÊN
-                DataView dvGV = new DataView(dtNS);
-                dvGV.RowFilter = "LoaiNS LIKE '%Giáo%' OR LoaiNS LIKE '%Giao%'";
-                cbGiaoVien.DataSource = dvGV;
-                cbGiaoVien.DisplayMember = "HoTen"; cbGiaoVien.ValueMember = "MaNS";
-
-                // 2. TRỢ GIẢNG
-                DataView dvTG = new DataView(dtNS);
-                dvTG.RowFilter = "LoaiNS LIKE '%Trợ%' OR LoaiNS LIKE '%Tro%'";
-                if (dvTG.Count > 0)
-                {
-                    cbTroGiang.DataSource = dvTG;
-                    cbTroGiang.DisplayMember = "HoTen"; cbTroGiang.ValueMember = "MaNS";
-                }
-
-                // Load Danh sách Lớp
-                LoadListLopHoc();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi tải dữ liệu: " + ex.Message);
-            }
-        }
-
-        private void LoadListLopHoc()
-        {
-            DataTable dataLop = LopHocDAO.Instance.GetAllLop();
-            if (!dataLop.Columns.Contains("NgayKetThuc"))
-                dataLop.Columns.Add("NgayKetThuc", typeof(DateTime));
-
-            foreach (DataRow row in dataLop.Rows)
-            {
-                try
-                {
-                    DateTime start = Convert.ToDateTime(row["NgayBatDau"]);
-                    string thu = row["Thu"].ToString();
-                    int soBuoi = row["SoBuoi"] != DBNull.Value ? Convert.ToInt32(row["SoBuoi"]) : 0;
-                    row["NgayKetThuc"] = CalculateEndDate(start, thu, soBuoi);
-                }
-                catch { row["NgayKetThuc"] = row["NgayBatDau"]; }
-            }
-
-            dgvMain.DataSource = dataLop;
-            string[] hide = { "MaKyNang", "MaGiaoVien", "MaTroGiang", "MaPhong", "SoBuoi" };
-            foreach (string c in hide) if (dgvMain.Columns.Contains(c)) dgvMain.Columns[c].Visible = false;
-
-            if (dgvMain.Columns.Contains("NgayBatDau")) dgvMain.Columns["NgayBatDau"].DefaultCellStyle.Format = "dd/MM/yyyy";
-            if (dgvMain.Columns.Contains("NgayKetThuc")) dgvMain.Columns["NgayKetThuc"].DefaultCellStyle.Format = "dd/MM/yyyy";
-        }
-
-        private void CbMonHoc_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            try
-            {
-                if (cbMonHoc.SelectedValue != null)
-                {
-                    string maMon = "";
-                    if (cbMonHoc.SelectedValue is DataRowView row) maMon = row["MaKyNang"].ToString();
-                    else maMon = cbMonHoc.SelectedValue.ToString();
-                    txbMaLop.Text = LopHocDAO.Instance.GetNewMaLop(maMon);
-                }
-            }
-            catch { }
-        }
-
-        private DateTime CalculateEndDate(DateTime startDate, string scheduleStr, int totalSessions)
-        {
-            if (totalSessions <= 0) return startDate;
-            List<DayOfWeek> days = new List<DayOfWeek>();
-            if (scheduleStr.Contains("T2")) days.Add(DayOfWeek.Monday);
-            if (scheduleStr.Contains("T3")) days.Add(DayOfWeek.Tuesday);
-            if (scheduleStr.Contains("T4")) days.Add(DayOfWeek.Wednesday);
-            if (scheduleStr.Contains("T5")) days.Add(DayOfWeek.Thursday);
-            if (scheduleStr.Contains("T6")) days.Add(DayOfWeek.Friday);
-            if (scheduleStr.Contains("T7")) days.Add(DayOfWeek.Saturday);
-            if (scheduleStr.Contains("CN")) days.Add(DayOfWeek.Sunday);
-
-            if (days.Count == 0) return startDate;
-            DateTime currentDate = startDate;
-            int sessionsCount = 0;
-            for (int i = 0; i < 365; i++)
-            {
-                if (days.Contains(currentDate.DayOfWeek))
-                {
-                    sessionsCount++;
-                    if (sessionsCount >= totalSessions) return currentDate;
-                }
-                currentDate = currentDate.AddDays(1);
-            }
-            return currentDate;
-        }
-
-        // 4. LOGIC SỰ KIỆN (BUTTONS & GRID)
+        // =========================================================
+        // 1. EVENT HANDLERS (LINKED TO DESIGNER)
+        // =========================================================
         private void BtnAdd_Click(object sender, EventArgs e)
         {
             // Kiểm tra chọn môn học
@@ -307,18 +95,24 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            // Insert
-            bool result = LopHocDAO.Instance.InsertLopFull(txbMaLop.Text, txbTenLop.Text,
-                GetVal(cbMonHoc), maGVCheck, maTGCheck, maPhong,
-                lichHoc, caHoc, (int)nmSiSo.Value, DateTime.Now);
-
-            if (result)
+            try
             {
-                MessageBox.Show("Mở lớp mới thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadListLopHoc();
-                ResetForm();
+                bool result = LopHocBUS.Instance.InsertLopFull(txbMaLop.Text, txbTenLop.Text,
+                    GetVal(cbMonHoc), maGVCheck, maTGCheck, maPhong,
+                    lichHoc, caHoc, (int)nmSiSo.Value, DateTime.Now);
+
+                if (result)
+                {
+                    MessageBox.Show(Constants.MSG_ADD_SUCCESS, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadListLopHoc();
+                    ResetForm();
+                }
+                else MessageBox.Show("Thêm thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            else MessageBox.Show("Thêm thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void BtnEdit_Click(object sender, EventArgs e)
@@ -328,12 +122,19 @@ namespace QuanLyTrungTam
             string conflictMsg = LopHocDAO.Instance.GetConflictMessage(GetVal(cbPhongHoc), GetVal(cbGiaoVien), GetVal(cbTroGiang), cbThu.Text, cbCaHoc.Text, txbMaLop.Text);
             if (conflictMsg != null) { MessageBox.Show(conflictMsg, "Cảnh báo trùng lịch", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
-            bool result = LopHocDAO.Instance.UpdateLopFull(txbMaLop.Text, txbTenLop.Text,
-                GetVal(cbGiaoVien), GetVal(cbTroGiang), GetVal(cbPhongHoc),
-                cbThu.Text, cbCaHoc.Text, (int)nmSiSo.Value, cbTrangThai.Text);
+            try
+            {
+                bool result = LopHocBUS.Instance.UpdateLopFull(txbMaLop.Text, txbTenLop.Text,
+                    GetVal(cbGiaoVien), GetVal(cbTroGiang), GetVal(cbPhongHoc),
+                    cbThu.Text, cbCaHoc.Text, (int)nmSiSo.Value, cbTrangThai.Text);
 
-            if (result) { MessageBox.Show("Cập nhật thành công!"); LoadListLopHoc(); }
-            else MessageBox.Show("Lỗi cập nhật!");
+                if (result) { MessageBox.Show(Constants.MSG_UPDATE_SUCCESS); LoadListLopHoc(); }
+                else MessageBox.Show("Lỗi cập nhật!");
+            }
+            catch (Exception ex)
+            {
+                 MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void BtnDel_Click(object sender, EventArgs e)
@@ -341,9 +142,140 @@ namespace QuanLyTrungTam
             if (string.IsNullOrEmpty(txbMaLop.Text)) return;
             if (MessageBox.Show("Xóa lớp sẽ xóa hết đăng ký. Tiếp tục?", "Cảnh báo", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                if (LopHocDAO.Instance.DeleteLop(txbMaLop.Text)) { MessageBox.Show("Đã xóa."); LoadListLopHoc(); ResetForm(); }
-                else MessageBox.Show("Lỗi xóa lớp.");
+                try
+                {
+                    if (LopHocBUS.Instance.DeleteLop(txbMaLop.Text)) { MessageBox.Show(Constants.MSG_DELETE_SUCCESS); LoadListLopHoc(); ResetForm(); }
+                    else MessageBox.Show("Lỗi xóa lớp.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                }
             }
+        }
+
+        private void BtnLamMoi_Click(object sender, EventArgs e) => ResetForm();
+
+        private void BtnSearch_Click(object sender, EventArgs e) => FilterData(txbSearch.Text);
+
+        private void TxbSearch_TextChanged(object sender, EventArgs e) => FilterData(txbSearch.Text);
+
+        // =========================================================
+        // 2. SHORTCUTS
+        // =========================================================
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            var sm = ShortcutManager.Instance;
+            if (sm.IsMatch("Refresh", e.KeyData)) { ResetForm(); e.Handled = true; return; }
+            if (sm.IsMatch("Save", e.KeyData)) { BtnAdd_Click(null, null); e.Handled = true; return; }
+            if (sm.IsMatch("Update", e.KeyData)) { BtnEdit_Click(null, null); e.Handled = true; return; }
+            if (sm.IsMatch("Delete", e.KeyData)) { BtnDel_Click(null, null); e.Handled = true; return; }
+            
+            base.OnKeyDown(e);
+        }
+
+        // =========================================================
+        // 3. LOGIC & HELPERS
+        // =========================================================
+
+        void LoadData()
+        {
+            try
+            {
+                // Init Events
+                if (cbMonHoc != null) 
+                {
+                    cbMonHoc.SelectedIndexChanged -= CbMonHoc_SelectedIndexChanged;
+                    cbMonHoc.SelectedIndexChanged += CbMonHoc_SelectedIndexChanged;
+                }
+                if (dgvMain != null)
+                {
+                    dgvMain.CellClick -= DgvMain_CellClick;
+                    dgvMain.CellClick += DgvMain_CellClick;
+                    dgvMain.CellFormatting -= DgvMain_CellFormatting;
+                    dgvMain.CellFormatting += DgvMain_CellFormatting;
+                    dgvMain.DataError -= DgvMain_DataError;
+                    dgvMain.DataError += DgvMain_DataError;
+                }
+
+                // Load Data Sources
+                cbMonHoc.DataSource = KyNangBUS.Instance.GetListKyNangActive();
+                cbMonHoc.DisplayMember = "TenKyNang"; cbMonHoc.ValueMember = "MaKyNang";
+
+                cbPhongHoc.DataSource = PhongHocBUS.Instance.GetListPhong();
+                cbPhongHoc.DisplayMember = "TenPhong"; cbPhongHoc.ValueMember = "MaPhong";
+
+                cbGiaoVien.DataSource = NhanVienBUS.Instance.GetListGiaoVien();
+                cbGiaoVien.DisplayMember = "HoTen"; cbGiaoVien.ValueMember = "MaNS";
+
+                cbTroGiang.DataSource = NhanVienBUS.Instance.GetListTroGiang();
+                cbTroGiang.DisplayMember = "HoTen"; cbTroGiang.ValueMember = "MaNS";
+
+                LoadListLopHoc();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Constants.MSG_LOAD_DATA_ERROR + ex.Message);
+            }
+        }
+
+        private void DgvMain_DataError(object sender, DataGridViewDataErrorEventArgs e) { e.ThrowException = false; }
+
+        private void CbMonHoc_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                cbGiaoVien.DataSource = null;
+                if (cbMonHoc.SelectedValue == null) return;
+
+                DataRowView rowMon = cbMonHoc.SelectedItem as DataRowView;
+                string maMon = "";
+                string chuyenNganhMon = "";
+
+                if (rowMon != null)
+                {
+                    maMon = rowMon["MaKyNang"].ToString();
+                    if (rowMon.DataView.Table.Columns.Contains("ChuyenNganh") && rowMon["ChuyenNganh"] != DBNull.Value)
+                    {
+                        chuyenNganhMon = rowMon["ChuyenNganh"].ToString().Trim();
+                    }
+                }
+                else
+                {
+                    maMon = cbMonHoc.SelectedValue.ToString();
+                }
+
+                txbMaLop.Text = LopHocBUS.Instance.GetNewMaLop(maMon);
+                cbGiaoVien.DataSource = NhanVienBUS.Instance.GetListGiaoVien(chuyenNganhMon);
+                cbGiaoVien.DisplayMember = "HoTen"; cbGiaoVien.ValueMember = "MaNS";
+                if (cbGiaoVien.Items.Count > 0) cbGiaoVien.SelectedIndex = 0;
+            }
+            catch { }
+        }
+
+        private void LoadListLopHoc()
+        {
+            DataTable dataLop = LopHocBUS.Instance.GetAllLop();
+            if (!dataLop.Columns.Contains("NgayKetThuc")) dataLop.Columns.Add("NgayKetThuc", typeof(DateTime));
+
+            foreach (DataRow row in dataLop.Rows)
+            {
+                try
+                {
+                    DateTime start = Convert.ToDateTime(row["NgayBatDau"]);
+                    string thu = row["Thu"].ToString();
+                    int soBuoi = row["SoBuoi"] != DBNull.Value ? Convert.ToInt32(row["SoBuoi"]) : 0;
+                    row["NgayKetThuc"] = LopHocBUS.Instance.CalculateEndDate(start, thu, soBuoi);
+                }
+                catch { row["NgayKetThuc"] = row["NgayBatDau"]; }
+            }
+
+            dgvMain.DataSource = dataLop;
+            
+            // USE HELPER
+            GridViewHelper.StandardizeGrid(dgvMain, new System.Collections.Generic.List<string> { 
+                "MaKyNang", "MaGiaoVien", "MaTroGiang", "MaPhong", "SoBuoi", "IsDeleted" 
+            });
         }
 
         private void FilterData(string keyword)
@@ -381,12 +313,13 @@ namespace QuanLyTrungTam
 
         private void ResetForm()
         {
-            txbMaLop.Clear(); txbTenLop.Clear(); cbThu.SelectedIndex = 0; cbCaHoc.SelectedIndex = 0;
+            txbMaLop.Clear(); txbTenLop.Clear(); 
+            cbThu.SelectedIndex = 0; cbCaHoc.SelectedIndex = 0;
             if (cbMonHoc.Items.Count > 0) cbMonHoc.SelectedIndex = 0;
             SetPlaceholder(txbSearch, "Tìm kiếm..."); FilterData("");
         }
 
-        private string GetVal(ComboBox cb) => cb.SelectedValue != null ? cb.SelectedValue.ToString() : "";
+        private string GetVal(ComboBox cb) { return cb.SelectedValue != null ? cb.SelectedValue.ToString() : ""; }
         private void SetCombo(ComboBox cb, object val) { if (val != DBNull.Value && val != null) cb.SelectedValue = val; }
 
         private void DgvMain_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -395,30 +328,21 @@ namespace QuanLyTrungTam
             {
                 string s = e.Value.ToString();
                 e.CellStyle.ForeColor = s.Contains("Đang") ? Color.Green : (s.Contains("kết thúc") ? Color.Red : Color.Blue);
-                e.CellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
             }
         }
 
-        private void AddInput(Panel p, string lb, Control c, int x, int y)
-        {
-            Label l = new Label { Text = lb, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
-            c.Location = new Point(x + 130, y - 3); c.Width = 220; c.Font = new Font("Segoe UI", 10);
-            p.Controls.Add(l); p.Controls.Add(c);
-        }
-
-        private Button CreateBtn(string t, Color c, int x, int y) => new Button { Text = t, Location = new Point(x, y), Size = new Size(130, 38), BackColor = c, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9, FontStyle.Bold), Cursor = Cursors.Hand };
-
         private void StyleGrid(DataGridView dgv)
         {
-            dgv.Dock = DockStyle.Fill; dgv.BackgroundColor = Color.White;
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect; dgv.ReadOnly = true;
-            dgv.RowHeadersVisible = false; dgv.ColumnHeadersHeight = 35;
+             dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv.ReadOnly = true;
+            dgv.RowHeadersVisible = false; 
+            dgv.ColumnHeadersHeight = 45; 
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 150, 136);
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243); 
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 11, FontStyle.Bold); 
         }
+        
 
         private void SetPlaceholder(TextBox txt, string holder)
         {

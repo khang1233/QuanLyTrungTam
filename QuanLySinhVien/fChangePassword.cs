@@ -1,7 +1,8 @@
-﻿using QuanLyTrungTam.DAO;
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.DTO;
 using QuanLyTrungTam.Utilities;
 using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace QuanLyTrungTam
@@ -10,17 +11,17 @@ namespace QuanLyTrungTam
     {
         private Account loginAccount;
 
-        // Constructor nhận vào Account từ Form cha
         public fChangePassword(Account acc)
         {
             InitializeComponent();
             this.loginAccount = acc;
-            this.Text = "Đổi Mật Khẩu Cá Nhân";
-            this.StartPosition = FormStartPosition.CenterParent; // Hiện giữa form cha
+            
+            // Populate username
+            if (loginAccount != null)
+                txbUserName.Text = loginAccount.TenDangNhap;
         }
         private void txbPassOld_TextChanged(object sender, EventArgs e)
         {
-            // Không cần viết gì ở đây cả
         }
 
         private void btnUpdate_Click(object sender, EventArgs e)
@@ -70,19 +71,27 @@ namespace QuanLyTrungTam
             }
 
             // 5. Cập nhật vào Database
-            if (AccountDAO.Instance.UpdatePassword(userName, passwordNew))
+            // Sử dụng AccountBUS
+            try
             {
-                MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                 if (AccountBUS.Instance.UpdatePassword(userName, passwordNew))
+                {
+                    MessageBox.Show("Đổi mật khẩu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // Cập nhật lại mật khẩu trong phiên làm việc hiện tại
-                loginAccount.MatKhau = passwordNew;
-                AppSession.CurrentUser.MatKhau = passwordNew;
+                    // Cập nhật lại mật khẩu trong phiên làm việc hiện tại
+                    loginAccount.MatKhau = passwordNew;
+                    if (AppSession.CurrentUser != null) AppSession.CurrentUser.MatKhau = passwordNew;
 
-                this.Close();
+                    this.Close();
+                }
+                else
+                {
+                    MessageBox.Show("Lỗi hệ thống! Không thể cập nhật mật khẩu.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Lỗi hệ thống! Không thể cập nhật mật khẩu.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                 MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

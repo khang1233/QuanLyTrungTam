@@ -12,34 +12,31 @@ namespace QuanLyTrungTam
     {
         // --- 1. KHAI BÁO BIẾN ---
         private Button btnNavDashboard;
-        private FlowLayoutPanel pnlSidebar;
-        private Panel pnlHeader;
-        private Panel pnlBody;
-        private Label lblHeaderTitle;
         private Button currentButton; // Nút đang chọn
 
         // Các nút Menu chính
         private Button btnNavHocVien, btnNavTaiChinh, btnNavDaoTao, btnNavHeThong;
-        private Button btnNavDoiMatKhau; // [MỚI] Nút Đổi Mật Khẩu
-
-        // Các nút Menu con (để gọi từ bên ngoài nếu cần)
-        private Button btnMonHoc, btnLopHoc, btnGiangVien, btnTKB;
+        private Button btnNavDoiMatKhau; 
 
         // Các Panel menu con
         private Panel pnlSubHocVien, pnlSubDaoTao, pnlSubVanHanh, pnlSubTaiChinh, pnlSubHeThong;
 
-        private Account loginAccount;
         private Form activeChildForm;
 
+        // Keep constructor compatible if other forms call it with Account
         public fMain(Account acc)
         {
-            this.loginAccount = acc;
-            AppSession.CurrentUser = acc;
-            BuildProfessionalUI();
+            InitializeComponent();
+            
+            // Sync Session if not already set
+            if (AppSession.CurrentUser == null) AppSession.CurrentUser = acc;
+            if (UserSession.Instance.CurrentUser == null) UserSession.Instance.SetSession(acc);
+
+            BuildMenu();
             ApplyUserPermissions();
 
             // Tự động click Dashboard nếu không phải Học viên
-            if (!loginAccount.Quyen.ToLower().Contains("hocvien"))
+            if (!UserSession.Instance.IsStudent())
             {
                 this.Load += (s, e) =>
                 {
@@ -49,38 +46,16 @@ namespace QuanLyTrungTam
             }
         }
 
-        // =========================================================================
-        // 2. DỰNG GIAO DIỆN (MENU SIDEBAR)
-        // =========================================================================
-        private void BuildProfessionalUI()
+        private void BuildMenu()
         {
-            this.Controls.Clear();
-            this.Size = new Size(1300, 800);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.Text = "Quản Lý Trung Tâm Đào Tạo - Professional UI";
 
-            // A. SIDEBAR
-            pnlSidebar = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Left,
-                Width = 260,
-                BackColor = Color.FromArgb(31, 30, 68),
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true
-            };
-            this.Controls.Add(pnlSidebar);
-
-            // B. HEADER
-            pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.FromArgb(0, 150, 136) };
-            this.Controls.Add(pnlHeader);
-            lblHeaderTitle = new Label { Text = "TRANG CHỦ", ForeColor = Color.White, Font = new Font("Segoe UI", 15, FontStyle.Bold), AutoSize = true, Location = new Point(25, 20) };
-            pnlHeader.Controls.Add(lblHeaderTitle);
-
-            // C. BODY
-            pnlBody = new Panel { Dock = DockStyle.Fill, BackColor = Color.WhiteSmoke, Padding = new Padding(10) };
-            this.Controls.Add(pnlBody);
-            pnlBody.BringToFront();
+            // Sidebar and Header are already executed in InitializeComponent()
+            // Ensure pnlBody reference is correct if needed, or rely on Designer's pnlBody
+            
+            // Re-assign references if they were manually created in Designer but variables are here
+             // (Assuming pnlSidebar, pnlHeader, pnlBody are in Designer now)
 
             // --- TẠO MENU ---
 
@@ -118,14 +93,17 @@ namespace QuanLyTrungTam
             // 6. HỆ THỐNG
             CreateMenuButton("  ⚙️   HỆ THỐNG", (s, e) => ShowSubMenu(pnlSubHeThong, s));
             pnlSubHeThong = CreateSubPanel(
-                new string[] { "Tài khoản", "Nhật ký" },
-                new EventHandler[] { btnTaiKhoan_Click, btnNhatKy_Click }
+                new string[] { "Tài khoản", "Nhật ký", "Cài đặt phím tắt" },
+                new EventHandler[] { btnTaiKhoan_Click, btnNhatKy_Click, btnShortcutConfig_Click }
             );
 
-            // [MỚI] 7. ĐỔI MẬT KHẨU (Nằm riêng cho dễ thấy)
+            // 7. ĐỔI MẬT KHẨU
             btnNavDoiMatKhau = CreateMenuButton("  🔐   ĐỔI MẬT KHẨU", btnDoiMatKhau_Click);
 
-            // 8. Đăng xuất
+            // 8. TRỢ GIÚP
+            CreateMenuButton("  ❓   TRỢ GIÚP", btnHelp_Click);
+
+            // 9. Đăng xuất
             CreateMenuButton("  🚪   ĐĂNG XUẤT", (s, e) => this.Close());
         }
 
@@ -138,12 +116,12 @@ namespace QuanLyTrungTam
                 Height = 55,
                 Width = 260,
                 FlatStyle = FlatStyle.Flat,
-                ForeColor = Color.Gainsboro,
+                ForeColor = Color.White,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Cursor = Cursors.Hand,
                 Margin = new Padding(0),
-                Tag = Color.FromArgb(31, 30, 68)
+                Tag = Color.FromArgb(0, 0, 64) // Default Dark Navy
             };
             btn.FlatAppearance.BorderSize = 0;
             btn.Click += (s, e) => { ActivateButton(s); click?.Invoke(s, e); };
@@ -153,13 +131,23 @@ namespace QuanLyTrungTam
 
         private Panel CreateSubPanel(string[] items, EventHandler[] events)
         {
-            Panel p = new Panel { Height = items.Length * 45, Width = 260, Visible = false, BackColor = Color.FromArgb(45, 45, 72), Margin = new Padding(0) };
+            Panel p = new Panel { Height = items.Length * 45, Width = 260, Visible = false, BackColor = Color.FromArgb(0, 0, 64), Margin = new Padding(0) };
             for (int i = 0; i < items.Length; i++)
             {
-                Button b = new Button { Text = "    ● " + items[i], Dock = DockStyle.Top, Height = 45, FlatStyle = FlatStyle.Flat, ForeColor = Color.Silver, Font = new Font("Segoe UI", 9), TextAlign = ContentAlignment.MiddleLeft, Cursor = Cursors.Hand };
+                Button b = new Button { 
+                    Text = "    ● " + items[i], 
+                    Dock = DockStyle.Top, 
+                    Height = 45, 
+                    FlatStyle = FlatStyle.Flat, 
+                    ForeColor = Color.White, 
+                    Font = new Font("Segoe UI", 9), 
+                    TextAlign = ContentAlignment.MiddleLeft, 
+                    Cursor = Cursors.Hand,
+                    Tag = Color.FromArgb(0, 0, 64) // Default Dark Navy
+                };
                 b.FlatAppearance.BorderSize = 0;
                 int idx = i;
-                b.Click += (s, e) => { events[idx]?.Invoke(s, e); };
+                b.Click += (s, e) => { ActivateButton(s); events[idx]?.Invoke(s, e); };
                 p.Controls.Add(b);
                 b.BringToFront();
             }
@@ -169,12 +157,15 @@ namespace QuanLyTrungTam
 
         private void ActivateButton(object btnSender)
         {
-            if (btnSender != null && currentButton != (Button)btnSender)
+            if (btnSender != null)
             {
-                DisableButton();
-                currentButton = (Button)btnSender;
-                currentButton.BackColor = Color.FromArgb(0, 150, 136);
-                currentButton.ForeColor = Color.White;
+                if (currentButton != (Button)btnSender)
+                {
+                    DisableButton();
+                    currentButton = (Button)btnSender;
+                    currentButton.BackColor = Color.FromArgb(33, 150, 243); // Bright Blue Active
+                    currentButton.ForeColor = Color.White;
+                }
             }
         }
 
@@ -182,8 +173,9 @@ namespace QuanLyTrungTam
         {
             if (currentButton != null)
             {
-                currentButton.BackColor = Color.FromArgb(31, 30, 68);
-                currentButton.ForeColor = Color.Gainsboro;
+                if (currentButton.Tag != null) currentButton.BackColor = (Color)currentButton.Tag;
+                else currentButton.BackColor = Color.FromArgb(0, 0, 64);
+                currentButton.ForeColor = Color.White;
             }
         }
 
@@ -216,23 +208,18 @@ namespace QuanLyTrungTam
         // --- PHÂN QUYỀN NGƯỜI DÙNG ---
         private void ApplyUserPermissions()
         {
-            string role = loginAccount.Quyen;
-
-            // 1. ADMIN: Hiện tất cả
-            if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase)) return;
+            if (UserSession.Instance.IsAdmin()) return;
 
             // 2. HỌC VIÊN: Ẩn sidebar, chuyển sang Form riêng
-            if (role.Equals("HocVien", StringComparison.OrdinalIgnoreCase))
+            if (UserSession.Instance.IsStudent())
             {
                 pnlSidebar.Visible = false;
-                ActivateChildForm(new FrmHomeHocVien(loginAccount.MaNguoiDung));
+                ActivateChildForm(new FrmHomeHocVien(AppSession.CurrentUser.MaNguoiDung));
                 return;
             }
 
             // 3. NHÂN SỰ (Giáo viên / Trợ giảng)
-            if (role.Equals("GiaoVien", StringComparison.OrdinalIgnoreCase) ||
-                role.Equals("TroGiang", StringComparison.OrdinalIgnoreCase) ||
-                role.Equals("NhanSu", StringComparison.OrdinalIgnoreCase))
+            if (UserSession.Instance.IsTeacher() || UserSession.Instance.IsStaff())
             {
                 // Ẩn Dashboard & Tài Chính & Học Viên
                 if (btnNavDashboard != null) btnNavDashboard.Visible = false;
@@ -269,14 +256,13 @@ namespace QuanLyTrungTam
         private void btnDiem_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "ĐIỂM SỐ"; ActivateChildForm(new FrmDiem()); }
         private void btnTraCuuPhi_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "THU HỌC PHÍ"; ActivateChildForm(new FrmTraCuuHocPhi()); }
         private void btnThuChi_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "QUẢN LÝ THU CHI"; ActivateChildForm(new FrmTaiChinh()); }
-        private void btnTaiKhoan_Click(object sender, EventArgs e) { new FrmThongTinCaNhan(loginAccount).ShowDialog(); }
+        private void btnTaiKhoan_Click(object sender, EventArgs e) { new FrmThongTinCaNhan(AppSession.CurrentUser).ShowDialog(); }
         private void btnNhatKy_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "NHẬT KÝ HỆ THỐNG"; ActivateChildForm(new FrmSystemAdmin()); }
+        private void btnHelp_Click(object sender, EventArgs e) { lblHeaderTitle.Text = "HƯỚNG DẪN SỬ DỤNG"; ActivateChildForm(new FrmHelp()); }
 
-        // [MỚI] SỰ KIỆN NÚT ĐỔI MẬT KHẨU
         private void btnDoiMatKhau_Click(object sender, EventArgs e)
         {
-            // Mở form fChangePassword dưới dạng Dialog (Cửa sổ con)
-            fChangePassword f = new fChangePassword(loginAccount);
+            fChangePassword f = new fChangePassword(AppSession.CurrentUser);
             f.ShowDialog();
         }
 
@@ -297,6 +283,10 @@ namespace QuanLyTrungTam
             FrmDangKyAdmin f = new FrmDangKyAdmin();
             ActivateChildForm(f);
             if (!string.IsNullOrEmpty(maHV)) f.AutoSelectStudent(maHV);
+        }
+        private void btnShortcutConfig_Click(object sender, EventArgs e)
+        {
+            new FrmShortcutConfig().ShowDialog();
         }
     }
 }

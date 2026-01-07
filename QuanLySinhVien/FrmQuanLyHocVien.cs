@@ -2,127 +2,74 @@
 using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
+using QuanLyTrungTam.BUS;
 using QuanLyTrungTam.DAO;
-using QuanLyTrungTam.DTO;
+using QuanLyTrungTam.Utilities;
 using System.Linq;
 
 namespace QuanLyTrungTam
 {
     public partial class FrmQuanLyHocVien : Form
     {
-        // --- 1. KHAI BÁO BIẾN UI ---
-        private Panel ui_pnlTop = new Panel { Dock = DockStyle.Top, Height = 250, BackColor = Color.White };
-        private DataGridView ui_dgvHocVien = new DataGridView();
-
-        // Các control nhập liệu
-        private TextBox ui_txbMa, ui_txbTen, ui_txbSDT, ui_txbEmail, ui_txbDiaChi;
-        private DateTimePicker ui_dtpNgaySinh;
-        private ComboBox ui_cbTrangThai;
-
-        // Tìm kiếm
-        private TextBox ui_txbSearch;
-        private Button ui_btnSearch;
-
         // Biến Logic lưu mã học viên đang chọn
         private string currentMaHV = "";
 
         public FrmQuanLyHocVien()
         {
-            // Không dùng InitializeComponent() vì bạn đang code giao diện động
-            SetupCustomUI();
+            InitializeComponent();
+            
+            // Cấu hình phím tắt
+            this.KeyPreview = true;
+
+            // Setup Placeholder logic
+            SetPlaceholder(ui_txbSearch, "Nhập mã số hoặc tên học viên...");
+
+            // Apply grid styling overrides if needed, though Designer handles most
+            ui_dgvHocVien.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(33, 150, 243);
+            ui_dgvHocVien.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            ui_dgvHocVien.AllowUserToAddRows = false;
+            ui_dgvHocVien.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 254);
+            ui_dgvHocVien.DefaultCellStyle.SelectionForeColor = Color.Black;
+
             LoadData();
         }
 
         // =========================================================================
-        // 1. TỰ ĐỘNG VẼ GIAO DIỆN (SETUP UI)
+        // 1. HỆ THỐNG PHÍM TẮT (CUSTOM SHORTCUTS)
         // =========================================================================
-        private void SetupCustomUI()
+        protected override void OnKeyDown(KeyEventArgs e)
         {
-            this.Controls.Add(ui_dgvHocVien);
-            this.Controls.Add(ui_pnlTop);
+            // 1. Lấy Manager
+            var sm = ShortcutManager.Instance;
 
-            // Cấu hình GridView
-            ui_dgvHocVien.Dock = DockStyle.Fill;
-            ui_dgvHocVien.BackgroundColor = Color.WhiteSmoke;
-            ui_dgvHocVien.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            ui_dgvHocVien.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            ui_dgvHocVien.ReadOnly = true;
-            ui_dgvHocVien.AllowUserToAddRows = false;
+            // 2. Refresh
+            if (sm.IsMatch("Refresh", e.KeyData)) { BtnLamMoi_Click(null, null); e.Handled = true; return; }
 
-            // 1. Khởi tạo control nhập liệu
-            ui_txbMa = new TextBox { ReadOnly = true, BackColor = Color.LightYellow };
-            ui_txbTen = new TextBox();
-            ui_txbSDT = new TextBox();
-            ui_txbEmail = new TextBox();
-            ui_txbDiaChi = new TextBox();
-            ui_dtpNgaySinh = new DateTimePicker { Format = DateTimePickerFormat.Short };
+            // 3. Save
+            if (sm.IsMatch("Save", e.KeyData)) { BtnThem_Click(null, null); e.Handled = true; return; }
 
-            ui_cbTrangThai = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-            // Danh sách trạng thái chuẩn
-            ui_cbTrangThai.Items.AddRange(new string[] { "Nhập học", "Đang học", "Bảo lưu", "Bỏ học", "Hoàn thành" });
-            ui_cbTrangThai.SelectedIndex = 0;
+            // 4. Update
+            if (sm.IsMatch("Update", e.KeyData)) { BtnSua_Click(null, null); e.Handled = true; return; }
 
-            // 2. Vẽ Control Input lên Panel (Dùng hàm helper AddInput bên dưới)
-            AddInput(ui_pnlTop, "Mã HV (Auto):", ui_txbMa, 20, 20);
-            AddInput(ui_pnlTop, "Họ và Tên:", ui_txbTen, 20, 60);
-            AddInput(ui_pnlTop, "Ngày Sinh:", ui_dtpNgaySinh, 20, 100);
+            // 5. Delete
+            if (sm.IsMatch("Delete", e.KeyData)) { BtnXoa_Click(null, null); e.Handled = true; return; }
 
-            AddInput(ui_pnlTop, "Số Điện Thoại:", ui_txbSDT, 400, 20);
-            AddInput(ui_pnlTop, "Email:", ui_txbEmail, 400, 60);
-            AddInput(ui_pnlTop, "Địa Chỉ:", ui_txbDiaChi, 400, 100);
-            AddInput(ui_pnlTop, "Trạng Thái:", ui_cbTrangThai, 780, 20);
+            // 6. Grant Account (Xử lý xung đột Copy)
+            if (sm.IsMatch("GrantAccount", e.KeyData))
+            {
+                // Nếu phím tắt là Ctrl+C (trùng Copy) và đang focus vào TextBox cần Copy
+                if (e.KeyData == (Keys.Control | Keys.C) && ActiveControl is TextBox txt && txt.SelectionLength > 0)
+                {
+                    base.OnKeyDown(e); // Để mặc định cho Copy
+                    return;
+                }
+                
+                BtnCapTK_Click(null, null); 
+                e.Handled = true; 
+                return;
+            }
 
-            // 3. Dàn Nút Chức Năng (Đã thêm nút XÓA và căn chỉnh lại tọa độ X)
-            // Khoảng cách giữa các nút là 140px
-            Button btnLamMoi = CreateBtn("🔄 Làm Mới", Color.Gray, 20, 160);
-            Button btnLuu = CreateBtn("💾 Lưu Mới", Color.Teal, 160, 160);
-            Button btnCapNhat = CreateBtn("✏️ Cập Nhật", Color.DodgerBlue, 300, 160);
-
-            // --- NÚT XÓA MỚI ---
-            Button btnXoa = CreateBtn("❌ Xóa HV", Color.Crimson, 440, 160);
-
-            Button btnDangKyLop = CreateBtn("📚 Đăng Ký Lớp", Color.Orange, 580, 160);
-            Button btnThuPhi = CreateBtn("💰 Thu Học Phí", Color.MediumSeaGreen, 720, 160);
-            Button btnCapTK = CreateBtn("🔐 Cấp Tài Khoản", Color.Purple, 860, 160);
-
-            // 4. Thanh Tìm Kiếm
-            Label lblSearch = new Label { Text = "Tìm kiếm:", Location = new Point(20, 212), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
-            ui_txbSearch = new TextBox { Location = new Point(100, 210), Width = 350, Font = new Font("Segoe UI", 10) };
-            SetPlaceholder(ui_txbSearch, "Nhập mã số hoặc tên học viên...");
-
-            ui_btnSearch = new Button { Text = "🔍", Location = new Point(460, 209), Size = new Size(50, 29), BackColor = Color.Navy, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-
-            // Gắn sự kiện tìm kiếm
-            ui_txbSearch.TextChanged += (s, e) => FilterData(ui_txbSearch.Text);
-            ui_btnSearch.Click += (s, e) => FilterData(ui_txbSearch.Text);
-
-            ui_pnlTop.Controls.AddRange(new Control[] { lblSearch, ui_txbSearch, ui_btnSearch });
-
-            // 5. Gắn sự kiện cho các nút chức năng
-            btnLamMoi.Click += (s, e) => ResetForm();
-            btnLuu.Click += BtnThem_Click;
-            btnCapNhat.Click += BtnSua_Click;
-            btnXoa.Click += BtnXoa_Click; // Sự kiện xóa mới
-            btnCapTK.Click += BtnCapTK_Click;
-
-            // --- NÚT CHUYỂN TRANG ---
-            btnDangKyLop.Click += (s, e) => {
-                if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
-                if (ui_cbTrangThai.Text == "Bỏ học") { MessageBox.Show("Học viên này đã bỏ học, không thể đăng ký lớp!"); return; }
-
-                fMain main = Application.OpenForms.OfType<fMain>().FirstOrDefault();
-                if (main != null) main.NavigateToDangKy(currentMaHV);
-            };
-
-            btnThuPhi.Click += (s, e) => {
-                if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
-
-                fMain main = Application.OpenForms.OfType<fMain>().FirstOrDefault();
-                if (main != null) main.NavigateToThuHocPhi(currentMaHV);
-            };
-
-            // Thêm tất cả nút vào Panel
-            ui_pnlTop.Controls.AddRange(new Control[] { btnLamMoi, btnLuu, btnCapNhat, btnXoa, btnDangKyLop, btnThuPhi, btnCapTK });
+            base.OnKeyDown(e);
         }
 
         // =========================================================================
@@ -132,7 +79,10 @@ namespace QuanLyTrungTam
         // Tải danh sách học viên lên Grid
         void LoadData()
         {
-            ui_dgvHocVien.DataSource = HocVienDAO.Instance.GetListHocVien();
+            ui_dgvHocVien.DataSource = HocVienBUS.Instance.GetListHocVien();
+            
+            // Standardize Grid
+            GridViewHelper.StandardizeGrid(ui_dgvHocVien);
 
             // Đăng ký lại sự kiện CellClick để tránh bị double event
             ui_dgvHocVien.CellClick -= DgvHocVien_CellClick;
@@ -177,7 +127,7 @@ namespace QuanLyTrungTam
         private void ResetForm()
         {
             currentMaHV = "";
-            ui_txbMa.Text = HocVienDAO.Instance.GetNewMaHV();
+            ui_txbMa.Text = HocVienBUS.Instance.GetNewMaHV();
             ui_txbTen.Clear();
             ui_txbSDT.Clear();
             ui_txbEmail.Clear();
@@ -188,45 +138,65 @@ namespace QuanLyTrungTam
             ui_txbTen.Focus();
         }
 
-        // --- CÁC SỰ KIỆN NÚT BẤM ---
+        // --- CÁC SỰ KIỆN NÚT BẤM (ĐÃ REFACTOR CHO DESIGNER) ---
 
-        // 1. Thêm Học Viên
+        // 1. Làm Mới
+        private void BtnLamMoi_Click(object sender, EventArgs e)
+        {
+             ResetForm();
+        }
+
+        // 2. Thêm Học Viên
         private void BtnThem_Click(object sender, EventArgs e)
         {
-            string ma = HocVienDAO.Instance.GetNewMaHV();
-            if (HocVienDAO.Instance.InsertHocVien(ma, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
+            try
             {
-                MessageBox.Show("Thêm học viên thành công!");
-                LoadData();
-                ResetForm();
+                string ma = HocVienBUS.Instance.GetNewMaHV();
+                if (HocVienBUS.Instance.InsertHocVien(ma, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
+                {
+                    MessageBox.Show("Thêm học viên thành công!");
+                    LoadData();
+                    ResetForm();
+                }
+                else
+                {
+                    MessageBox.Show("Có lỗi khi thêm học viên!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Có lỗi khi thêm học viên!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
-        // 2. Cập Nhật (Sửa) Học Viên
+        // 3. Cập Nhật (Sửa) Học Viên
         private void BtnSua_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(currentMaHV)) return;
 
-            // Cập nhật thông tin
-            if (HocVienDAO.Instance.UpdateHocVien(currentMaHV, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
+            try
             {
-                // Nếu trạng thái là Bỏ học -> Khóa tài khoản
-                AccountDAO.Instance.LockAccountByUserID(currentMaHV, (ui_cbTrangThai.Text == "Bỏ học"));
+                // Cập nhật thông tin
+                if (HocVienBUS.Instance.UpdateHocVien(currentMaHV, ui_txbTen.Text, ui_dtpNgaySinh.Value, ui_txbSDT.Text, ui_txbEmail.Text, ui_txbDiaChi.Text, ui_cbTrangThai.Text))
+                {
+                    // Nếu trạng thái là Bỏ học -> Khóa tài khoản
+                    AccountBUS.Instance.LockAccountByUserID(currentMaHV, (ui_cbTrangThai.Text == "Bỏ học"));
 
-                MessageBox.Show("Cập nhật thông tin thành công!");
-                LoadData();
+                    MessageBox.Show("Cập nhật thông tin thành công!");
+                    LoadData();
+                }
+                else
+                {
+                    MessageBox.Show("Cập nhật thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Cập nhật thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                 MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
-        // 3. Xóa Học Viên (MỚI THÊM)
+        // 4. Xóa Học Viên
         private void BtnXoa_Click(object sender, EventArgs e)
         {
             // Kiểm tra đầu vào
@@ -236,28 +206,33 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            // Xác nhận xóa (Quan trọng)
-            string msg = $"Bạn có chắc chắn muốn xóa học viên [{ui_txbTen.Text}] (Mã: {currentMaHV})?\n\n" +
+            // Xác nhận xóa
+            string msg = string.Format("Bạn có chắc chắn muốn xóa học viên [{0}] (Mã: {1})?\n\n", ui_txbTen.Text, currentMaHV) +
                          "⚠️ CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn:\n";
-                        
 
             if (MessageBox.Show(msg, "Xác nhận xóa dữ liệu", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
             {
-                // Gọi DAO để xóa (DAO gọi thủ tục USP_XoaHocVien)
-                if (HocVienDAO.Instance.DeleteHocVien(currentMaHV))
+                try
                 {
-                    MessageBox.Show("Đã xóa học viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadData();   // Tải lại danh sách
-                    ResetForm();  // Xóa trắng các ô nhập liệu
+                    if (HocVienBUS.Instance.DeleteHocVien(currentMaHV))
+                    {
+                        MessageBox.Show("Đã xóa học viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();   
+                        ResetForm();  
+                    }
+                    else
+                    {
+                        MessageBox.Show("Xóa thất bại! Vui lòng kiểm tra lại kết nối hoặc dữ liệu.", "Lỗi hệ thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Xóa thất bại! Vui lòng kiểm tra lại kết nối hoặc dữ liệu.", "Lỗi hệ thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(ex.Message, "Lỗi Quyền Hạn", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 }
             }
         }
 
-        // 4. Cấp Tài Khoản
+        // 5. Cấp Tài Khoản
         private void BtnCapTK_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(currentMaHV))
@@ -266,8 +241,7 @@ namespace QuanLyTrungTam
                 return;
             }
 
-            // Mặc định pass là 123, Loại TK là HocVien
-            if (AccountDAO.Instance.InsertAccount(currentMaHV, "123", "HocVien", currentMaHV))
+            if (AccountBUS.Instance.InsertAccount(currentMaHV, "123", "HocVien", currentMaHV))
             {
                 MessageBox.Show("Đã cấp tài khoản thành công!\nTên đăng nhập: " + currentMaHV + "\nMật khẩu: 123");
             }
@@ -277,36 +251,35 @@ namespace QuanLyTrungTam
             }
         }
 
-        // =========================================================================
-        // 3. CÁC HÀM HELPER (HỖ TRỢ UI)
-        // =========================================================================
-
-        // Hàm hỗ trợ vẽ Label + Control nhập liệu nhanh
-        void AddInput(Panel p, string lb, Control c, int x, int y)
+        private void BtnDangKyLop_Click(object sender, EventArgs e)
         {
-            Label l = new Label { Text = lb, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", 9) };
-            c.Location = new Point(x + 110, y - 3);
-            c.Width = 220;
-            c.Font = new Font("Segoe UI", 10);
-            p.Controls.Add(l);
-            p.Controls.Add(c);
+            if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
+            if (ui_cbTrangThai.Text == "Bỏ học") { MessageBox.Show("Học viên này đã bỏ học, không thể đăng ký lớp!"); return; }
+            fMain main = Application.OpenForms.OfType<fMain>().FirstOrDefault();
+            if (main != null) main.NavigateToDangKy(currentMaHV);
         }
 
-        // Hàm tạo nút bấm có style đồng bộ
-        Button CreateBtn(string t, Color c, int x, int y)
+        private void BtnThuPhi_Click(object sender, EventArgs e)
         {
-            return new Button
-            {
-                Text = t,
-                Location = new Point(x, y),
-                Size = new Size(130, 35),
-                BackColor = c,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
+             if (string.IsNullOrEmpty(currentMaHV)) { MessageBox.Show("Vui lòng chọn học viên trước!"); return; }
+             fMain main = Application.OpenForms.OfType<fMain>().FirstOrDefault();
+             if (main != null) main.NavigateToThuHocPhi(currentMaHV);
         }
+
+        private void Ui_txbSearch_TextChanged(object sender, EventArgs e)
+        {
+            FilterData(ui_txbSearch.Text);
+        }
+
+        private void Ui_btnSearch_Click(object sender, EventArgs e)
+        {
+            FilterData(ui_txbSearch.Text);
+        }
+
+
+        // =========================================================================
+        // 3. CÁC HÀM HELPER
+        // =========================================================================
 
         // Hàm tạo placeholder text cho ô tìm kiếm
         private void SetPlaceholder(TextBox txt, string holder)

@@ -1,0 +1,71 @@
+TỔNG HỢP CÔNG VIỆC VÀ TÍNH NĂNG ĐỒ ÁN QUẢN LÝ TRUNG TÂM
+
+I. TỔNG QUAN HỆ THỐNG
+Dự án đã xây dựng hoàn thiện khung sườn (framework) theo mô hình 3 lớp (GUI - BUS - DAO) và các tính năng nghiệp vụ cốt lõi cho việc quản lý trung tâm.
+
+II. CÁC PHÂN HỆ (MODULE) ĐÃ HOÀN THIỆN
+
+1. Phân hệ Hệ thống & Bảo mật (System)
+   - Đăng nhập (Form1), Đăng ký (FrmDangKy), Đổi mật khẩu (fChangePassword).
+   - Cơ chế Phân quyền (PhanQuyen): Chia rõ vai trò Admin, Nhân sự (HR), Giáo viên, Học viên.
+   - Màn hình chính (fMain): Điều hướng động theo quyền hạn người dùng.
+   - Cấu hình hệ thống (FrmSystemAdmin) và Phím tắt (FrmShortcutConfig).
+
+2. Phân hệ Quản lý Danh mục (Management)
+   - Quản lý Nhân sự & Giáo viên (FrmQuanLyNhanSu):
+     + Thêm/Sửa/Xóa hồ sơ.
+     + Phân loại vai trò, chuyên môn.
+   - Quản lý Học viên (FrmQuanLyHocVien):
+     + Hồ sơ chi tiết, tra cứu thông tin.
+     + Cổng thông tin cá nhân (FrmThongTinCaNhan/FrmHomeHocVien).
+   - Quản lý Môn học/Kỹ năng (FrmQuanLyMonHoc).
+   - Quản lý Lớp học (FrmLop):
+     + Tạo lớp, xếp lịch học, gán giáo viên chủ nhiệm/giảng dạy.
+
+3. Phân hệ Học vụ (Academic)
+   - Thời khóa biểu (FrmSchedule): Xem và quản lý lịch học.
+   - Điểm danh (FrmDiemDanh): Quản lý trạng thái hiện diện của học viên.
+   - Quản lý Điểm (FrmDiem): Nhập và tra cứu kết quả học tập.
+
+4. Phân hệ Tài chính (Finance)
+   - Quản lý Học phí (FrmHocPhi): Ghi nhận đóng phí.
+   - Tra cứu lịch sử đóng phí (FrmTraCuuHocPhi).
+   - Báo cáo/Thống kê Tài chính (FrmTaiChinh).
+
+5. Tiện ích & Báo cáo (Utilities & Dashboard)
+   - Dashboard tổng quan (FrmDashboard): Hiển thị biểu đồ, số liệu thống kê nhanh.
+   - Hướng dẫn sử dụng (FrmHelp).
+
+III. CÁC CÔNG VIỆC KỸ THUẬT ĐÃ THỰC HIỆN GẦN ĐÂY
+
+1. Giao diện (UI/UX)
+   - Đồng bộ hóa toàn bộ giao diện theo tông màu chủ đạo Xanh (#2196F3).
+   - Tối ưu hiển thị các bảng dữ liệu (DataGridView), input forms.
+   - Sửa lỗi layout, border, font chữ để đảm bảo tính thẩm mỹ và chuyên nghiệp.
+
+2. Logic Nghiệp vụ (Business Logic)
+   - Ngăn chặn trùng lặp dữ liệu: Kiểm tra trùng tên Môn học, Lớp học.
+   - Cải thiện logic lọc dữ liệu: Lọc giáo viên theo chuyên môn khi xếp lớp.
+   - Tinh chỉnh quyền hạn (Permissions):
+     + Giới hạn quyền của Nhân sự (HR) chỉ xem thông tin cho phép.
+     + Đảm bảo bảo mật luồng dữ liệu giữa các role.
+   - Sửa các lỗi runtime (ví dụ: lỗi Constants, lỗi null tham chiếu).
+
+IV. GỢI Ý PHÂN CHIA CÔNG VIỆC CHO NHÓM (DỰA TRÊN CODEBASE HIỆN TẠI)
+
+- Nhóm trưởng / Core Dev:
+  + Quản lý cấu trúc Database, các lớp DAO/BUS nền tảng.
+  + Phụ trách module Hệ thống, Phân quyền, Dashboard.
+  + Review code và merge các tính năng.
+
+- Thành viên 1 (Phụ trách Học vụ):
+  + Phát triển và test sâu các form: Lớp học, Điểm danh, Điểm số, Thời khóa biểu.
+  + Đảm bảo logic xếp lịch không bị trùng.
+
+- Thành viên 2 (Phụ trách Nhân sự & Danh mục):
+  + Quản lý form Nhân sự, Học viên, Môn học.
+  + Xử lý các logic validate dữ liệu đầu vào, tìm kiếm/tra cứu.
+
+- Thành viên 3 (Phụ trách Tài chính & Báo cáo):
+  + Quản lý form Học phí, Tài chính.
+  + Làm các báo cáo thống kê, xuất Excel (nếu cần phát triển thêm).
